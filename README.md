@@ -1,4 +1,4 @@
-# ResourceManagement
+# Resource Management
 
 Repository with the modules of the Resource Management Block inside the Agent Controller, developed by the members of the project from the UPC team.
 
