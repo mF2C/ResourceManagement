@@ -11,4 +11,7 @@ The modules with the documentation can be found in this repository.
 
 - Discovery
 - Identification
-- Categorization
+- Resource Categorization
+- Policies
+- CAU
+- CAU leader
