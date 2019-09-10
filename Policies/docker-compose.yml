@@ -1,0 +1,11 @@
+version: '3'
+services:
+  policies:
+    image: mf2c/policies:latest
+    container_name: policies
+    ports:
+      - "46050:46050"
+    environment:
+      - "MF2C=True"
+      - "WIFI_DEV="
+      - "isLeader=False"
