@@ -35,6 +35,12 @@ if sys.argv[1] == "leader":
 
     
 elif sys.argv[1] == "agent":  
+    
+    print("\nPerforming the REST call to get the assigned IP")
+    #Getting IP
+    r3 = requests.get('http://'+DISCOVERY_NAME+':46040/api/v1/resource-management/discovery/my_ip/')
+    print(r3.json())
+    
     # REST call to scan 10 times or until results not empty
     print("\nPerforming REST call to scan 10 times or until results are not empty")
     

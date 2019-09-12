@@ -31,14 +31,14 @@ write_compose_file() {
 version: '3'
 services:
   discovery:
-    build: ~/mf2c-code-upc/Discovery
+    build: ~/ResourceManagement/Discovery
     container_name: mf2c_discovery
     expose:
       - 46040
     cap_add:
       - NET_ADMIN
   policy-mock:
-    build: ~/mf2c-code-upc/policy-mock
+    build: ~/ResourceManagement/policy-mock
     container_name: mf2c_policy
     depends_on:
       - discovery
