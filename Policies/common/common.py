@@ -69,6 +69,7 @@ class ModuleURLs:
     URL_DISCOVERY_SWITCH_LEADER = '/api/v1/resource-management/discovery/broadcast/'
     URL_DISCOVERY_WATCH = '/api/v1/resource-management/discovery/watch_agent_side/'
     URL_DISCOVERY_DHCP = '/api/v1/resource-management/discovery/dhcp/'
+    URL_DISCOVERY_MYIP = '/api/v1/resource-management/discovery/my_ip/'
     URL_DISCOVERY_JOIN = '/api/v1/resource-management/discovery/join/'
     URL_IDENTIFICATION = '/api/v1/resource-management/identification/requestID/'
     URL_IDENTIFICATION_START = '/api/v1/resource-management/identification/registerDevice/'

@@ -17,6 +17,9 @@ from common.logs import LOG
 from common.common import CPARAMS, URLS
 from common.CIMI import CIMIcalls as CIMI, AgentResource
 
+from requests.exceptions import ConnectTimeout as timeout
+from requests.exceptions import ReadTimeout as timeout2
+
 __status__ = 'Production'
 __maintainer__ = 'Alejandro Jurnet'
 __email__ = 'ajurnet@ac.upc.edu'
@@ -69,6 +72,7 @@ class AgentStart:
         # self.URL_DISCOVERY_MAC = urls.build_url_address(urls.URL_DISCOVERY_MAC, portaddr=addr_dis)
         self.URL_DISCOVERY_JOIN = URLS.build_url_address(URLS.URL_DISCOVERY_JOIN, portaddr=addr_dis)
         self.URL_DISCOVERY_DHCP = URLS.build_url_address(URLS.URL_DISCOVERY_DHCP, portaddr=addr_dis)
+        self.URL_DISCOVERY_MYIP = URLS.build_url_address(URLS.URL_DISCOVERY_MYIP, portaddr=addr_dis)
         self.URL_DISCOVERY_SWITCH_LEADER = URLS.build_url_address(URLS.URL_DISCOVERY_SWITCH_LEADER, portaddr=addr_dis)
         self.URL_IDENTIFICATION = URLS.build_url_address(URLS.URL_IDENTIFICATION, portaddr=addr_id)
         self.URL_CATEGORIZATION_SWITCH_LEADER = URLS.build_url_address(URLS.URL_CATEGORIZATION_SWITCH_LEADER,
@@ -425,7 +429,7 @@ class AgentStart:
         if 'found_leaders' in rjson and 'used_mac' in rjson and len(rjson['found_leaders']) > 0:
             self.detectedLeaderID, self.MACaddr, self.bssid = rjson['found_leaders'][0]['Leader ID'], rjson['used_mac'], rjson['found_leaders'][0]['Bssid']
         else:
-            print(self.ETAG, 'Discovery is not detecting the Leader \'{}\''.format(rjson))
+            LOG.error(self.TAG + 'Discovery is not detecting a Leader \'{}\''.format(rjson))
             self.detectedLeaderID, self.MACaddr, self.bssid = None, None, None
         # r = requests.get(self.URL_DISCOVERY_MAC)
         # rjson = r.json()
@@ -439,9 +443,20 @@ class AgentStart:
         r = requests.post(self.URL_DISCOVERY_JOIN, json=payload)
         rjson = r.json()
         if r.status_code != 200:
-            LOG.warning('JOIN opperation failed. Reply from discovery: {}'.format(rjson['message']))
+            LOG.warning('JOIN operation failed. Reply from discovery: {}'.format(rjson['message']))
             return False
         else:
+            LOG.debug(self.TAG + 'Sending MYIP trigger to Discovery...')
+            try:
+                r2 = requests.get(self.URL_DISCOVERY_MYIP, timeout=10.)
+            except (timeout, timeout2):
+                LOG.error('MYIP trigger timeout.')
+                return False
+            rjson2 = r2.json()
+            if r2.status_code != 200:
+                LOG.warning(self.TAG + 'MYIP operation failed. Reply from discovery: {}'.format(rjson2))
+                return False
+            LOG.debug(self.TAG + 'MYIP trigger success. Reply form Discovery: {}'.format(rjson2['IP_address']))
             return True
 
 
@@ -553,6 +568,6 @@ class AgentStart:
         payload = {
             'key': 'start'
         }
-        r = requests.get(self.URL_DISCOVERY_WATCH, json=payload)
+        r = requests.get(self.URL_DISCOVERY_WATCH + 'start', json=payload)
         rjson = r.json()
         print(self.TAG, 'Discovery: {}'.format(rjson['message']))
