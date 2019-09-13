@@ -38,5 +38,5 @@ RUNNING=$(echo "${RMINFO}" | jq -r ".running" 2>/dev/null)
     log "OK" "Policies sub-modules are currently running.") || \
     log "NO" "Policies sub-modules are NOT running."
 ( [[ ${POLICIES} == "true" ]]  && \
-    log "OK" "Area Resilience sub-module succesfully started.") || \
+    log "OK" "Area Resilience sub-module successfully started.") || \
     log "NO" "Area Resilience sub-module not started."
