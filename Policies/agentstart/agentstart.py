@@ -198,6 +198,8 @@ class AgentStart:
                 try:
                     r = self.__trigger_joinDiscovery()
                     self.discovery_failed = not r
+                    if not self.discovery_failed:
+                        self.leaderIP = CPARAMS.LEADER_DISCOVERY_IP
                 except Exception:
                     LOG.exception(self.TAG + 'Discovery JOIN trigger failed.')
                     self.discovery_failed = True

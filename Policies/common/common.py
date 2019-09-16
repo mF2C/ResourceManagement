@@ -23,6 +23,7 @@ class common_params:
     CIMI_HEADER = {'slipstream-authn-info': 'super ADMIN'}
     CAU_CLIENT_ADDR = ('cau-client', 46065)
     WIFI_CONFIG_FILE = '/discovery/mF2C-VSIE.conf'
+    LEADER_DISCOVERY_IP = '192.168.7.1'
 
     TIME_WAIT_INIT = 10.
     TIME_WAIT_ALIVE = 5.
