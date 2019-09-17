@@ -81,37 +81,35 @@ class Broadcaster(object):
         config.read(config_file)
         attribute_list = []
         encoding_error = False
+        attribute_list.append(InformationElementAttribute("01",leader_id))
         for section in config.sections():
             if config[section]['type'] not in InformationElementAttribute.TYPES_SWAPPED.keys():
                 #if the type is unknown, there will be an error in encoding so this case is checked here
                 encoding_error = True
             else:
                 type_hex = InformationElementAttribute.TYPES_SWAPPED[config[section]['type']]
-                # if the attribute is the leader ID, the value is kept as it is because it is already in hex
-                if type_hex == "01":
-                    value_hex = leader_id
-                #otherwise, for other attributes, the human readable value is converted to the corresponding hex code defined for it
+
+                if type_hex == "02":
+                    if config[section]['value'] not in InformationElementAttribute.SERVICE_TYPE_DICT_SWAPPED.keys():
+                        encoding_error = True
+                    else:
+                        value_hex = InformationElementAttribute.convert_value_to_hex(type_hex,config[section]['value'])
                 else:
-                    if type_hex == "02":
-                        if config[section]['value'] not in InformationElementAttribute.SERVICE_TYPE_DICT_SWAPPED.keys():
+                    if type_hex == "04":
+                        if config[section]['value'] not in InformationElementAttribute.URGENCY_DICT_SWAPPED.keys():
                             encoding_error = True
                         else:
                             value_hex = InformationElementAttribute.convert_value_to_hex(type_hex,config[section]['value'])
                     else:
-                        if type_hex == "04":
-                            if config[section]['value'] not in InformationElementAttribute.URGENCY_DICT_SWAPPED.keys():
-                                encoding_error = True
-                            else:
+                        if type_hex == "03":
+                            try:
+                                #int(config[section]['value'])
                                 value_hex = InformationElementAttribute.convert_value_to_hex(type_hex,config[section]['value'])
-                        else:
-                            if type_hex == "03":
-                                try:
-                                    #int(config[section]['value'])
-                                    value_hex = InformationElementAttribute.convert_value_to_hex(type_hex,config[section]['value'])
-                                except ValueError:
-                                    encoding_error = True                             
+                            except ValueError:
+                                encoding_error = True                             
                                 
                 attribute_list.append(InformationElementAttribute(type_hex,value_hex))
+        
         
         if not encoding_error:
             #create a vsie out of the different attributes
