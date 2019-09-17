@@ -18,7 +18,7 @@ if sys.argv[1] == "leader":
     
     print("\nPerforming REST call to start broadcasting")
     r = requests.post('http://'+DISCOVERY_NAME+':46040/api/v1/resource-management/discovery/broadcast/',
-        json={"broadcast_frequency":"100", "interface_name":int_name, "config_file":"mF2C-VSIE.conf"})
+        json={"broadcast_frequency":"100", "interface_name":int_name, "config_file":"mF2C-VSIE.conf", "leader_id":"0f848d8fb78cbe5615507ef5a198f660ac89a3ae03b95e79d4ebfb3466c20d54e9a5d9b9c41f88c782d1f67b32231d31b4fada8d2f9dd31a4d884681b784ec5a"})
     
     print ("Response code: ",r.status_code)
     print(r.json()["message"])
@@ -52,6 +52,7 @@ elif sys.argv[1] == "agent":
         print ("Response code: ",r.status_code)
         found_leaders = r.json()['found_leaders']
         print ("Found leaders:\n",len(found_leaders))
+        print("Found leader:\n",found_leaders)
         nb_attempts+=1
         time.sleep(5)
     

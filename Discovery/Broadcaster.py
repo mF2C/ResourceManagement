@@ -76,7 +76,7 @@ class Broadcaster(object):
     
        
     @staticmethod
-    def fill_beacon_fields( broadcast_frequency, interface, config_file): 
+    def fill_beacon_fields( broadcast_frequency, interface, config_file,leader_id): 
         config = configparser.ConfigParser() 
         config.read(config_file)
         attribute_list = []
@@ -89,7 +89,7 @@ class Broadcaster(object):
                 type_hex = InformationElementAttribute.TYPES_SWAPPED[config[section]['type']]
                 # if the attribute is the leader ID, the value is kept as it is because it is already in hex
                 if type_hex == "01":
-                    value_hex = config[section]['value']
+                    value_hex = leader_id
                 #otherwise, for other attributes, the human readable value is converted to the corresponding hex code defined for it
                 else:
                     if type_hex == "02":
