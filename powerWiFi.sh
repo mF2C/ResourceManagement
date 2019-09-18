@@ -48,12 +48,13 @@ echo "Docker found."
 
 pid=$(docker inspect -f '{{.State.Pid}}' $container_name)
 # Assign phy wireless interface to the container
-mkdir -p /var/run/netns
-ln -s /proc/"$pid"/ns/net /var/run/netns/"$pid"
-/sbin/iw phy "$PHY" set netns "$pid"
+#mkdir -p /var/run/netns
+#ln -s /proc/"$pid"/ns/net /var/run/netns/"$pid"
+#/sbin/iw phy "$PHY" set netns "$pid"
 #Bring the wireless interface up
-docker exec -d "$container_name" ip link set "$WIFI_DEV" name wlan0
-WIFI_DEV="wlan0"
+#docker exec -d "$container_name" ip link set "$WIFI_DEV" name wlan0
+#WIFI_DEV="wlan0"
+ip addr flush dev "$WIFI_DEV"
 docker exec -d "$container_name" ifconfig "$WIFI_DEV" up
 
 
@@ -65,15 +66,21 @@ if [[ "$IS_LEADER" == "True" ]]
     NETMASK="/24"
     ### Assign an IP to the wifi interface
     echo "Configuring interface with IP address"
-    ip netns exec "$pid" ip addr flush dev "$WIFI_DEV"
-    ip netns exec "$pid" ip link set "$WIFI_DEV" up
-    ip netns exec "$pid" ip addr add "$IP_AP$NETMASK" dev "$WIFI_DEV"
+#    ip netns exec "$pid" ip addr flush dev "$WIFI_DEV"
+#    ip netns exec "$pid" ip link set "$WIFI_DEV" up
+#    ip netns exec "$pid" ip addr add "$IP_AP$NETMASK" dev "$WIFI_DEV"
+
+    ip addr flush dev "$WIFI_DEV"
+    ip link set "$WIFI_DEV" up
+    ip addr add "$IP_AP$NETMASK" dev "$WIFI_DEV"
 
     ### iptables rules for NAT
     echo "Adding natting rule to iptables (container)"
-    ip netns exec "$pid" iptables -t nat -A POSTROUTING -s $SUBNET.0$NETMASK ! -d $SUBNET.0$NETMASK -j MASQUERADE
+#    ip netns exec "$pid" iptables -t nat -A POSTROUTING -s $SUBNET.0$NETMASK ! -d $SUBNET.0$NETMASK -j MASQUERADE
+    iptables -t nat -A POSTROUTING -s $SUBNET.0$NETMASK ! -d $SUBNET.0$NETMASK -j MASQUERADE
 
     ### Enable IP forwarding
     echo "Enabling IP forwarding (container)"
-    ip netns exec "$pid" echo 1 > /proc/sys/net/ipv4/ip_forward
+#    ip netns exec "$pid" echo 1 > /proc/sys/net/ipv4/ip_forward
+    echo 1 > /proc/sys/net/ipv4/ip_forward
   fi

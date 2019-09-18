@@ -25,11 +25,12 @@ from flask_restplus import Api, Resource, fields
 from threading import Thread
 from time import sleep
 import requests
+import subprocess
 
 __status__ = 'Production'
 __maintainer__ = 'Alejandro Jurnet'
 __email__ = 'ajurnet@ac.upc.edu'
-__version__ = '2.0.4'
+__version__ = '2.0.5'
 __author__ = 'Universitat Politècnica de Catalunya'
 
 # ### Global Variables ### #
@@ -365,11 +366,25 @@ def initialization():
 
     # 2. Leader Reelection Module Creation (None)
 
+    # 3.1 Discovery IP adquisition
+    result = subprocess.run(['/bin/ip', 'route'], stdout=subprocess.PIPE)
+    route_ip = bytes(result.stdout).decode()
+    route_ip_l = route_ip.split('\n')
+    server_ip = ''
+    if len(route_ip_l) > 0:
+        for line in route_ip_l:
+            if 'default' in line:
+                server_ip = line.split(' ')[2]
+                break
+    if server_ip == '':
+        LOG.error('Discovery IP cannot be received. Stopping.')
+        exit(4)
+
     # 3. Agent Start Module Creation
     LOG.debug('Agent Start submodule creation')
     if CPARAMS.MF2C_FLAG:
         agentstart = AgentStart(addr_pol=('127.0.0.1', '46050'),
-                                addr_dis=('discovery', '46040'),
+                                addr_dis=('{}'.format(server_ip), '46040'),
                                 addr_cat=('resource-categorization', '46070'),
                                 addr_id=('identification', '46060'))
     else:

@@ -198,6 +198,8 @@ class AgentStart:
                 try:
                     r = self.__trigger_joinDiscovery()
                     self.discovery_failed = not r
+                    if not self.discovery_failed:
+                        self.leaderIP = CPARAMS.LEADER_DISCOVERY_IP
                 except Exception:
                     LOG.exception(self.TAG + 'Discovery JOIN trigger failed.')
                     self.discovery_failed = True
@@ -259,12 +261,19 @@ class AgentStart:
             self.__print_summary()
 
             # Create/Modify Agent Resource
-            self.deviceIP = ''  # Real value updated in categorization
+            # self.deviceIP = ''  # First value from Join trigger. Real value updated in categorization.
+            self.deviceIP = '' if self.deviceIP is None else self.deviceIP
             self._cimi_agent_resource = AgentResource(self.deviceID, self.deviceIP, self.isAuthenticated,
-                                                      self.secureConnection, self.imLeader, leaderIP=self.leaderIP)
+                                                      self.secureConnection, self.imLeader)
+            LOG.debug(self.TAG + 'CIMI Agent Resource payload: {}'.format(self._cimi_agent_resource.getCIMIdicc()))
             if self._cimi_agent_resource_id is None:
                 # Create agent resource
                 self._cimi_agent_resource_id = CIMI.createAgentResource(self._cimi_agent_resource.getCIMIdicc())
+                sleep(.1)
+                self._cimi_agent_resource = AgentResource(self.deviceID, self.deviceIP, self.isAuthenticated,
+                                                          self.secureConnection, self.imLeader, leaderIP=self.leaderIP)
+                LOG.debug(self.TAG + 'CIMI Agent Resource payload: {}'.format(self._cimi_agent_resource.getCIMIdicc()))
+                status = CIMI.modify_resource(self._cimi_agent_resource_id, self._cimi_agent_resource.getCIMIdicc())
             else:
                 # Agent resource already exists
                 status = CIMI.modify_resource(self._cimi_agent_resource_id, self._cimi_agent_resource.getCIMIdicc())
@@ -313,7 +322,7 @@ class AgentStart:
             self.discovery_leader_failed = True
             LOG.debug(self.TAG + 'Sending Broadcast trigger to discovery...')
             try:
-                r = self.__trigger_switch_discovery() # TODO: Send deviceID when broadcasting
+                r = self.__trigger_switch_discovery()
                 self.detectedLeaderID = self.deviceID
                 self.discovery_leader_failed = not r
             except Exception as ex:
@@ -371,7 +380,7 @@ class AgentStart:
             return
 
         # Create/Modify Agent Resource
-        self.deviceIP = ''  # Real value updated in categorization
+        self.deviceIP = CPARAMS.LEADER_DISCOVERY_IP  # Real value updated in categorization
         self._cimi_agent_resource = AgentResource(self.deviceID, self.deviceIP, True,
                                                   True, self.imLeader)
         # deprecated: real values of Auth and Conn (as now are None in the Leader)
@@ -411,7 +420,8 @@ class AgentStart:
             'discovery_switched': self.discovery_switched,
             # 'dataclay_started': self.dataclay_started,
             'isLeader': self.imLeader,
-            'leaderIP': self.leaderIP
+            'leaderIP': self.leaderIP,
+            'deviceIP': self.deviceIP
         }
         return data
 
@@ -457,6 +467,7 @@ class AgentStart:
                 LOG.warning(self.TAG + 'MYIP operation failed. Reply from discovery: {}'.format(rjson2))
                 return False
             LOG.debug(self.TAG + 'MYIP trigger success. Reply form Discovery: {}'.format(rjson2['IP_address']))
+            self.deviceIP = rjson2['IP_address']
             return True
 
 
@@ -533,7 +544,8 @@ class AgentStart:
         payload = {
             'broadcast_frequency': 100,
             'interface_name': CPARAMS.WIFI_DEV_FLAG,
-            'config_file': CPARAMS.WIFI_CONFIG_FILE
+            'config_file': CPARAMS.WIFI_CONFIG_FILE,
+            'leader_id': self.deviceID
         }
         r = requests.post(self.URL_DISCOVERY_SWITCH_LEADER, json=payload)
         rjson = r.json()
@@ -568,6 +580,6 @@ class AgentStart:
         payload = {
             'key': 'start'
         }
-        r = requests.get(self.URL_DISCOVERY_WATCH + 'start', json=payload)
+        r = requests.get(self.URL_DISCOVERY_WATCH, json=payload)
         rjson = r.json()
-        print(self.TAG, 'Discovery: {}'.format(rjson['message']))
+        print(self.TAG, 'Discovery: {}'.format(rjson))
