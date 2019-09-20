@@ -77,7 +77,7 @@ class JoinConfig(object):
             if interface.startswith("wl"):
                 wifi_interface = interface
                 break
-        wifi_interface="wlp62s0"
+
         if wifi_interface == "":
             return ip
         

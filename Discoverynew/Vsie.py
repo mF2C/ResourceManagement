@@ -1,7 +1,7 @@
 class Vsie(object): 
     
     ELEMENT_ID = "dd"
-    OUI = "ff22dd"
+    OUI = "ff22cc"
     
     def __init__(self, vendor_specific_content) :
         self.vendor_specific_content = vendor_specific_content
