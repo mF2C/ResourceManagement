@@ -1,38 +1,74 @@
-import json, requests,sys, logging,time
+import json, requests,sys, logging,time,subprocess
 import http.client as http_client
 
 int_name = sys.argv[2]
 how_run = sys.argv[3]
+extra_param = sys.argv[4]
+
+result = subprocess.run(['/bin/ip', 'route'], stdout=subprocess.PIPE)
+route_ip = bytes(result.stdout).decode()
+route_ip_l = route_ip.split('\n')
+server_ip = ''
+if len(route_ip_l) > 0:
+    for line in route_ip_l:
+        if 'default' in line:
+            server_ip = line.split(' ')[2]
+            break
 
 if how_run == "script":
     DISCOVERY_NAME = 'discovery'
 else:
-    DISCOVERY_NAME = '127.0.0.1'
+    DISCOVERY_NAME = server_ip
 
 if sys.argv[1] == "leader":
     
-    print("\nPerforming the REST call to get the IP address of the leader")
-    #Getting IP
-    r_ip = requests.get('http://'+DISCOVERY_NAME+':46040/api/v1/resource-management/discovery/my_ip/')
-    print(r_ip.json())
+    if extra_param != "stop":
     
-    print("\nPerforming REST call to start broadcasting")
-    r = requests.post('http://'+DISCOVERY_NAME+':46040/api/v1/resource-management/discovery/broadcast/',
-        json={"broadcast_frequency":"100", "interface_name":int_name, "config_file":"mF2C-VSIE.conf", "leader_id":"0f848d8fb78cbe5615507ef5a198f660ac89a3ae03b95e79d4ebfb3466c20d54e9a5d9b9c41f88c782d1f67b32231d31b4fada8d2f9dd31a4d884681b784ec5a"})
+        print ("\nPerforming REST call to start watching for agents leaving/joining")
+        r_w = requests.get('http://'+DISCOVERY_NAME+':46040/api/v1/resource-management/discovery/watch/')
+        print ("Response code: ",r_w.status_code)
+        print(r_w.json()["message"])
+        
+        print("\nPerforming the REST call to get the IP address of the leader")
+        #Getting IP
+        r_ip = requests.get('http://'+DISCOVERY_NAME+':46040/api/v1/resource-management/discovery/my_ip/')
+        print(r_ip.json())
+        
+        print("\nPerforming REST call to start broadcasting")
+        r = requests.post('http://'+DISCOVERY_NAME+':46040/api/v1/resource-management/discovery/broadcast/',
+            json={"broadcast_frequency":"100", "interface_name":int_name, "config_file":"mF2C-VSIE.conf", "leader_id":"0f848d8fb78cbe5615507ef5a198f660ac89a3ae03b95e79d4ebfb3466c20d54e9a5d9b9c41f88c782d1f67b32231d31b4fada8d2f9dd31a4d884681b784ec5a"})
+        
+        print ("Response code: ",r.status_code)
+        print(r.json()["message"])
+        
+        print ("\nPerforming REST call to start the DHCP server")
+        r_dns = requests.post('http://'+DISCOVERY_NAME+':46040/api/v1/resource-management/discovery/dhcp/',json={"interface_name":int_name})
+        print ("Response code: ",r_dns.status_code)
+        print(r_dns.json()["message"])
+        
+        print ("\nPerforming REST call to start watching for agents leaving/joining")
+        r_w = requests.get('http://'+DISCOVERY_NAME+':46040/api/v1/resource-management/discovery/watch/')
+        print ("Response code: ",r_w.status_code)
+        print(r_w.json()["message"])
     
-    print ("Response code: ",r.status_code)
-    print(r.json()["message"])
-    
-    print ("\nPerforming REST call to start the DHCP server")
-    r_dns = requests.post('http://'+DISCOVERY_NAME+':46040/api/v1/resource-management/discovery/dhcp/',json={"interface_name":int_name})
-    print ("Response code: ",r_dns.status_code)
-    print(r_dns.json()["message"])
-    
-    print ("\nPerforming REST call to start watching for agents leaving/joining")
-    r_w = requests.get('http://'+DISCOVERY_NAME+':46040/api/v1/resource-management/discovery/watch/')
-    print ("Response code: ",r_w.status_code)
-    print(r_w.json()["message"])
+    if extra_param == "stop":
+        print("\nPerforming REST call to stop broadcasting")
+        r = requests.put('http://'+DISCOVERY_NAME+':46040/api/v1/resource-management/discovery/broadcast/')
+        
+        print ("Response code: ",r.status_code)
+        print(r.json()["message"])
+        
+        print("\nPerforming REST call to stop dhcp")
+        r = requests.put('http://'+DISCOVERY_NAME+':46040/api/v1/resource-management/discovery/dhcp/')
+        
+        print ("Response code: ",r.status_code)
+        print(r.json()["message"])
 
+        print("\nPerforming REST call to stop watching")
+        r = requests.put('http://'+DISCOVERY_NAME+':46040/api/v1/resource-management/discovery/watch/')
+        
+        print ("Response code: ",r.status_code)
+        print(r.json()["message"])
     
 elif sys.argv[1] == "agent":  
     
