@@ -70,8 +70,8 @@ class Watcher(object):
     @staticmethod    
     def update(mac_addr):
         
-        CIMI_URL = 'http://cimi:8201'
-        CIMI_API = 'http://cimi:8201/api'
+        CIMI_URL = 'http://localhost'
+        CIMI_API = 'http://localhost/api'
         CIMI_HEADERS = {'Content-Type': 'application/json','slipstream-authn-info': 'internal ADMIN'}
     
         url_device = CIMI_URL+'/api/device-dynamic'

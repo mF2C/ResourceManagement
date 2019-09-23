@@ -69,6 +69,7 @@ class JoinConfig(object):
     
     @staticmethod
     def get_ip():
+        ip = ""
         #Getting the name of the interface to be used
         all_ifs = ni.interfaces()
         wifi_interface = ""
@@ -84,24 +85,27 @@ class JoinConfig(object):
             ip = ni.ifaddresses(wifi_interface)[ni.AF_INET][0]['addr']
         except Exception as e:
             excep = e
-        
-            ip = ''
-            #First run dhclient to force IP assignment (will happen if this is a normal agent)
-            return_code = subprocess.call(['dhclient',wifi_interface])
-    
-            #Then retrieve the IP  
-            stop_condition = False
             
-            while stop_condition == False:
-                try:
-                    ip = ni.ifaddresses(wifi_interface)[ni.AF_INET][0]['addr']
-                except Exception as e:
-                    excep = e
-                
-                if ip != '' and "169.254" not in ip:
-                    stop_condition = True
-                
-                time.sleep(1)
+            if os.path.exists('/etc/wpa_supplicant/wpa_supplicant.conf'):
+                has_joined=JoinConfig.check(interface)
+                if has_joined:
+                    #run dhclient to force IP assignment (will happen if this is a normal agent)
+                    
+                    return_code = subprocess.call(['dhclient',wifi_interface])
+            
+                    #Then retrieve the IP  
+                    stop_condition = False
+                    
+                    while stop_condition == False:
+                        try:
+                            ip = ni.ifaddresses(wifi_interface)[ni.AF_INET][0]['addr']
+                        except Exception as e:
+                            excep = e
+                        
+                        if ip != '' and "169.254" not in ip:
+                            stop_condition = True
+                        
+                        time.sleep(1)
 
         
         return ip
