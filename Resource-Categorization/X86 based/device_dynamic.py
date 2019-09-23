@@ -226,6 +226,7 @@ def dynamic_info():
                             ethernet_throughput_info = [str(item) for item in ethernet_throughput_info1]
 
                     net_dyna = json.dumps({'ethernetThroughputInfo': wifi_throughput_info, 'wifiThroughputInfo': ethernet_throughput_info,'ethernetAddress': "None", 'wifiAddress': ddisIP})
+                    return net_dyna
 
                 else:
                     try:

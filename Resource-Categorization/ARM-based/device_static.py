@@ -66,16 +66,32 @@ def static_info():
 
         return hwsw_stat
 
+
     def net_stat_info():
          global ethe_address_NIC, wifi_address_NIC
 
          try:
-            response_discovery = requests.get("http://discovery:46040/api/v1/resource-management/discovery/my_ip/", verify=False)
-            res_dis = response_discovery.json()
-            devdisIP = res_dis['IP_address']
+            client = docker.from_env()
+            running_containers = client.containers.list(filters={"status": "running"})
+            running_discovery_containers = []
+            for container in running_containers:
+                container_im = container.attrs['Config']['Image']
+                if "discovery" in container_im:
+                    running_discovery_containers.append(container)
 
-            if devdisIP != '':
-                 net_stat = json.dumps({"networkingStandards": 'WiFi'})
+            if len(running_discovery_containers) == 1:
+                disc_cont_id = running_discovery_containers[0]
+                cmd = 'python get_ip_addr.py'
+                try:
+                    exit_code, output = disc_cont_id.exec_run(cmd, stderr=True, stdout=True, demux=True)
+                    if exit_code == 0:
+                        ip = output[0]  # output[0] is the stdout
+                        ddisIP = str(ip)
+                    else:
+                        ddisIP = "None"
+                except:
+                    ddisIP = "None"
+                net_stat = json.dumps({"networkingStandards": 'WiFi'})
 
             else:
                 time.sleep(45)
@@ -94,7 +110,7 @@ def static_info():
                     eta = ([(x['iface']) for x in ifaces])
                     eta2 = str(', '.join(eta))
                     eta3 = str(eta2)
-                    eta4 = subprocess.Popen("ip addr show tun0", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                    #eta4 = subprocess.Popen("ip addr show tun0", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                 except:
                     eta3 = 'Null'
 
@@ -105,6 +121,7 @@ def static_info():
 
 
          return net_stat
+
 
 
     def hwloccpuinfo():
