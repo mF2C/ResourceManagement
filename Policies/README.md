@@ -7,6 +7,7 @@
 ---
 
 - [Description](#Description)
+- [Environment variables](#Environment variables)
 - [Leader Election](#Leader Election)
 - [API Endpoints](#API Endpoints)
 - [LICENSE](#LICENSE)
@@ -20,7 +21,40 @@ The policies module is responsible for:
 - Define the resilience and clustering policies.
 - Enforce the protection of the area (Leader and Backup).
 - Definition and Execution of the Leader Election Algorithm.
-- Orchestration of the Resource Manager Block.
+- Orchestration of the Resource Management Block.
+
+
+### Environment variables
+
+To run policies module along other mF2C components, is necessary to specify the following environment variables:
+
+```yaml
+- "MF2C=True"
+```
+
+##### The interface used by discovery is specified in:
+
+```yaml
+- "WIFI_DEV_FLAG="
+```
+
+**NOTE**: Specific configurations are required in Discovery to attach the interface. This parameter is only used to inform Discovery at the startup.
+
+##### To modify the role of the agent (normal/leader): 
+
+```yaml
+- "isLeader=False"
+```
+
+##### To specify static leader and device IPs:
+
+```yaml
+- "leaderIP="
+- "deviceIP="
+```
+
+**NOTE**: Only used when Discovery cannot detect a nearby Leader. These variables should only be used for testing purposes and internal mF2C procedures may fail if they are modified.
+
 
 ### Leader Election
 
