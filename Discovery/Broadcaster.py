@@ -1,7 +1,7 @@
 from Vsie import *
 from InformationElementAttribute import *
 from subprocess import call,check_output,STDOUT,CalledProcessError,Popen,PIPE
-import signal,sys
+import signal,sys,os
 import configparser
 import shlex
 
@@ -29,37 +29,44 @@ class Broadcaster(object):
     
     @staticmethod
     def stop_broadcast(): 
-        call(['service', 'hostapd', 'stop'])
+        #check if already stopped
+        if not Broadcaster.check_active():
+            return "Broadcaster is already stopped!"
+        
+        cmd = ['service','hostapd','stop']
+
+        pipes = Popen(cmd, stdout=PIPE, stderr=PIPE)
+        std_out, std_err = pipes.communicate()
+
+        if pipes.returncode != 0:
+            # an error happened!
+            msg = "%s. Code: %s" % (std_err.strip(), pipes.returncode)
+            
+        msg = std_out.decode('utf-8')
+        if "failed" in msg:
+            msg = "Broadcaster stop failed!"
+        else:
+            msg = "Broadcaster successfully stopped!"
+        return msg
         
     @staticmethod
-    def check_active():   
+    def check_active(): 
+        #if the configuration file is not set, then hostapd is not working:
+        if os.path.exists('/etc/hostapd/hostapd.conf') == False:
+            return False
+          
         command = ['service','hostapd','status']
         try:
             out = check_output(command).decode()
         except CalledProcessError as e:
             out = e.output.decode()
             
-        if ("Active: active (running)" in out) or ("is running" in out):
+        if "is running" in out:
             is_running=True
         else:
             is_running=False
         return is_running
 
-    @staticmethod
-    def check_inactive():   
-        command = ['service','hostapd','status']
-        try:
-            out = check_output(command).decode()
-        except CalledProcessError as e:
-            out = e.output.decode()
-            
-        if ("Active: inactive (dead)" in out) or ("is not running" in out) :
-            is_inactive=True
-        else:
-            is_inactive=False
-        return is_inactive
-    
-    
     @staticmethod
     def check_dnsmasq_active():   
         command = ['service','dnsmasq','status']
@@ -68,7 +75,7 @@ class Broadcaster(object):
         except CalledProcessError as e:
             out = e.output.decode()
             
-        if ("pid file exists" in out):
+        if ("pid file exists" in out) or ("(running)" in out):
             is_running=True
         else:
             is_running=False
@@ -147,5 +154,26 @@ class Broadcaster(object):
             msg = "Dnsmasq start failed!"
         else:
             msg = "Dnsmasq started successfully!"
+        return msg
+    
+    
+    @staticmethod
+    def stop_dhcp():  
+        
+        if not Broadcaster.check_dnsmasq_active():
+            return "Dnsmasq is already inactive!"
+        
+        cmd = ['pkill','dnsmasq']
+        pipes = Popen(cmd, stdout=PIPE, stderr=PIPE)
+        std_out, std_err = pipes.communicate()
+
+        if pipes.returncode != 0:
+            # an error happened!
+            msg = "Unable to stop dnsmasq, Return Code: "+str(pipes.returncode)
+            
+        msg = std_out.decode('utf-8')
+        if not Broadcaster.check_dnsmasq_active():
+            msg = "Dnsmasq stopped successfully!"
+
         return msg
 
