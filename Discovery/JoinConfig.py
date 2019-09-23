@@ -31,9 +31,9 @@ class JoinConfig(object):
         else:
 
             interface_arg = "-i"+interface
-            return_code = subprocess.call(['wpa_supplicant', interface_arg, '-Dnl80211', '-c/etc/wpa_supplicant/wpa_supplicant.conf' ,'-B'])
-
-            if return_code != 0:
+            pipes = subprocess.Popen(['wpa_supplicant', interface_arg, '-Dnl80211', '-c/etc/wpa_supplicant/wpa_supplicant.conf' ,'-B','> /dev/null 2>&1'],stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            std_out, std_err = pipes.communicate()
+            if pipes.returncode != 0:
             # an error happened!
                 msg = "Association failed! Reason: "+str(return_code)
             else:
@@ -77,6 +77,7 @@ class JoinConfig(object):
             if interface.startswith("wl"):
                 wifi_interface = interface
                 break
+
         if wifi_interface == "":
             return ip
         
