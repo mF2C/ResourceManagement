@@ -1,3 +1,4 @@
+import subprocess
 
 from device_static import static_info
 from device_dynamic import dynamic_info
@@ -174,7 +175,7 @@ class Main():
             else:
                 devDynamic = {**devID, **dynamicinfo, **sensors, **statusinfo}
                 jsonString_merged_dynamic = devDynamic
-                print("Device-Dynamic information for normal agent: ", jsonString_merged_dynamic)
+                print("Device-Dynamic information for normal-agent: ", jsonString_merged_dynamic)
                 try:
                     if self.deviceDynamicID_cimiresource is None:
                         r2 = requests.post("http://cimi:8201/api/device-dynamic",
@@ -228,24 +229,25 @@ class Main():
             connect = True
             isleader = False
             try:
+                result = subprocess.run(['/bin/ip', 'route'], stdout=subprocess.PIPE)
+                route_ip = bytes(result.stdout).decode()
+                route_ip_l = route_ip.split('\n')
+                server_ip = ''
+                if len(route_ip_l) > 0:
+                    for line in route_ip_l:
+                        if 'default' in line:
+                            server_ip = line.split(' ')[2]
+                            break
 
-                r32 = requests.get("http://cimi:8201/api/device-dynamic",headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
-                dynamics_info = r32.json()
-                try:
-                    rs_info = dynamics_info['deviceDynamics']
-                    ips1 = [item['wifiAddress'] for item in rs_info]
-                    ips2 = [item['ethernetAddress'] for item in rs_info]
-                    ips3 = [*ips1, *ips2]
-                    try:
-                        devips = [x for x in ips3 if x != "Null"]
-                        if ips3[0] == ips3[1]:
-                            devIP = ips3[0]
-                        else:
-                            devIP = (" ".join(devips))
-                    except ValueError:
-                        pass
-                        devIP = (" ")
-                    devip = str(devIP)
+                if server_ip != "":
+                    ddevIP = str(server_ip)
+                    starturl = "http://"
+                    endurl = ":46040/api/v1/resource-management/discovery/my_ip/"
+                    finalurl = str(starturl + ddevIP + endurl)
+                    response_discovery = requests.get(finalurl, verify=False)
+                    res_dis = response_discovery.json()
+                    devdisIP = res_dis['IP_address']
+                    devip = str(devdisIP)
 
                     agentResource1_info = {"device_id": MyleaderID, "device_ip": devip, "leader_id": dID, "leader_ip": leddevip,"authenticated": authenticated, "connected": connect, "isLeader": isleader,"backup_ip": backupip, "childrenIPs": childip}
                     agentResource_info = {"device_id": deviceID, "device_ip": devip}
@@ -253,9 +255,9 @@ class Main():
                     agentRes_info = json.dumps(agentResource_info)
 
                     if agentResource_info['device_ip'] is "Null" and agentResource1_info['device_ip'] is "Null":
-                        print("Wait for the Alpine container to up")
+                        print("Device IP is not retrieve yet!!!")
                     elif agentResource_info['device_ip'] is "" and agentResource1_info ['device_ip'] is "":
-                        print("Wait for the Alpine container to up")
+                        print("Device IP is not retrieve yet!!!")
                     else:
                         try:
                             r91 = requests.get("http://cimi:8201/api/agent", headers={"slipstream-authn-info": "internal ADMIN"},verify=False)
@@ -279,10 +281,10 @@ class Main():
 
                         except ConnectionError as e:
                             print("Agent resource is not yet created!!! Wait for few times")
-                except:
-                    print("Alpine container is not yet up so, device IP has not been captured!!!")
+                else:
+                    print("Device IP has not been captured!!!")
             except:
-                print("Alpine container is not yet up so, device IP has not been captured!!!")
+                print("Device IP is not retrieve yet!!!")
 
             t.sleep(10)
             if switch_flag:
@@ -301,7 +303,7 @@ class Main():
         staticinfo = json.loads(stat)
         devStatic= {**devID, **staticinfo, **isleader1}
         jsonString_merged_static = devStatic
-        print("Device information for leader agent: ", jsonString_merged_static)
+        print("Device information for leader-agent: ", jsonString_merged_static)
 
         try:
             r = requests.post("http://cimi:8201/api/device", headers={"slipstream-authn-info": "internal ADMIN"},
@@ -360,11 +362,8 @@ class Main():
 
         statusinfo = {"status": str(self.status)}
 
-
-
         while self._running:
             dyna = dynamic_info()
-            #t.sleep(20)
             dynamicinfo = json.loads(dyna)
             wifi_ip = dyna['wifiAddress']
             if wifi_ip == '':
@@ -372,18 +371,18 @@ class Main():
             else:
                 devDynamic = {**devID, **dynamicinfo, **sensors, **statusinfo}
                 jsonString_merged_dynamic = devDynamic
-                print("Device-Dynamic information for normal agent: ", jsonString_merged_dynamic)
+                print("Device-Dynamic information for leader-agent: ", jsonString_merged_dynamic)
                 try:
                     if self.deviceDynamicID_cimiresource is None:
                         r2 = requests.post("http://cimi:8201/api/device-dynamic",
                                            headers={"slipstream-authn-info": "internal ADMIN"},
                                            json=jsonString_merged_dynamic, verify=False)
-                        print("Posting device-dynamic resource info for normal-agent: ", r2, r2.request, r2.reason,
+                        print("Posting device-dynamic resource info for leader-agent: ", r2, r2.request, r2.reason,
                               r2.json())
                         self.deviceDynamicID_cimiresource = r2.json()['resource-id']
                         r3 = requests.get("http://cimi:8201/api/device-dynamic",
                                           headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
-                        print("Response to see posted device-dynamic resource info for normal-agent: ", r3, r3.request,
+                        print("Response to see posted device-dynamic resource info for leader-agent: ", r3, r3.request,
                               r3.reason, r3.json())
                     else:
                         cimiResourceID = {"resource-id": self.deviceDynamicID_cimiresource}
@@ -392,11 +391,11 @@ class Main():
                         r4 = requests.put("http://cimi:8201/api/device-dynamic",
                                           headers={"slipstream-authn-info": "internal ADMIN"},
                                           json=jsonString_merged_dynamic, verify=False)
-                        print("Updating device-dynamic resource info for normal-agent: ", r4, r4.request, r4.reason,
+                        print("Updating device-dynamic resource info for leader-agent: ", r4, r4.request, r4.reason,
                               r4.json())
                         r5 = requests.get("http://cimi:8201/api/device-dynamic",
                                           headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
-                        print("Response to see updated device-dynamic resource info for normal-agent: ", r5, r5.request,
+                        print("Response to see updated device-dynamic resource info for leader-agent: ", r5, r5.request,
                               r5.reason, r5.json())
                 except ConnectionError as e:
                     print(e)
@@ -404,7 +403,8 @@ class Main():
                     print(r)
                 t.sleep(10)
 
-    ## Leader-side agent-resource Information sending to the CIMI+Dataclay for storing ##
+
+## Leader-side agent-resource Information sending to the CIMI+Dataclay for storing ##
 
     def agentresourceLeader(self):
         global agresid, end_url_point, wifi_address_NIC, ethe_address_NIC
@@ -413,197 +413,210 @@ class Main():
             t.sleep(0.1)
         deviceID = self.userID
         dID = str(deviceID)
-        # devID = {"device": dID}
+
         MyleaderID = (str(self.deviceID_cimiresource))
-        #t.sleep(10)
 
         while self._running:
+            t.sleep(0.1)
 
-            response_discovery = requests.get("http://discovery:46040/api/v1/resource-management/discovery/my_ip/",
-                                              verify=False)
-            res_dis = response_discovery.json()
-            devdisIP = res_dis['IP_address']
-            print("IP from discovery: ", devdisIP)
+            result = subprocess.run(['/bin/ip', 'route'], stdout=subprocess.PIPE)
+            route_ip = bytes(result.stdout).decode()
+            route_ip_l = route_ip.split('\n')
+            server_ip = ''
+            if len(route_ip_l) > 0:
+                for line in route_ip_l:
+                    if 'default' in line:
+                        server_ip = line.split(' ')[2]
+                        break
+            if server_ip != "":
 
-            if devdisIP != '':
-                devip  = str(devdisIP)
+                ddevIP = str(server_ip)
+                starturl = "http://"
+                endurl = ":46040/api/v1/resource-management/discovery/my_ip/"
+                finalurl = str(starturl + ddevIP + endurl)
+                response_discovery = requests.get(finalurl, verify=False)
+                res_dis = response_discovery.json()
+                devdisIP = res_dis['IP_address']
+                devip = str(devdisIP)
 
-            else:
-                t.sleep(35)
+            # else:
+            #     t.sleep(35)
+            #     try:
+            #         eta1 = ()
+            #         ifconfig_out = docker_client2.containers.run("alpine:edge", "ifconfig", network_mode='host',
+            #                                                      auto_remove=True).decode()
+            #         ifconfig_list = str(ifconfig_out).split('\n\n')
+            #         ifaces = []
+            #         for item in ifconfig_list:
+            #             lines = item.split('\n')
+            #             name = lines[0].split(' ')[0]
+            #             ipv4 = ''
+            #             try:
+            #                 if lines[1][9:].split(' ')[1] == 'inet':
+            #                     ipv4 = lines[1][9:].split(' ')[2][5:]
+            #             except IndexError:
+            #                 ipv4 = ''
+            #
+            #         # print('Name: {}, IPv4: {}, IPv6: {} MAC: {}'.format(name, ipv4, ipv6, mac))
+            #             if name.find('veth') == -1 and name != 'lo' and name.find('br') == -1 and name.find('docker') == -1 and len(name) > 0:
+            #                 ifaces.append({'iface': name, 'ipv4': ipv4})
+            #
+            #         address = ([(x['iface'], x['ipv4']) for x in ifaces])
+            #         eta1 = dict(address)
+            #
+            #         x = []
+            #         keys = eta1.keys()
+            #         sub = "en"
+            #         sub1 = "wl"
+            #         a = ""
+            #         b = ""
+            #         for key in keys:
+            #             x.append(key)
+            #             a = (next((s for s in x if sub in s), None))
+            #             b = (next((s for s in x if sub1 in s), None))
+            #             if 'eth0' in x and 'wlan0' in x:
+            #                 wifi_address_NICs = str(eta1['wlan0'])
+            #                 if wifi_address_NICs == "":
+            #                     wifi_address_NIC = "Null"
+            #                 else:
+            #                     wifi_address_NIC = str(eta1['wlan0'])
+            #                 ethe_address_NICs = str(eta1['eth0'])
+            #                 if ethe_address_NICs == "":
+            #                     ethe_address_NIC = "Null"
+            #                 else:
+            #                     ethe_address_NIC = str(eta1['eth0'])
+            #
+            #             elif a in x and 'wlan0' in x:
+            #
+            #                 wifi_address_NICs = str(eta1['wlan0'])
+            #                 if wifi_address_NICs == "":
+            #                     wifi_address_NIC = "Null"
+            #                 else:
+            #                     wifi_address_NIC = str(eta1['wlan0'])
+            #                 ethe_address_NICs = str(eta1[a])
+            #                 if ethe_address_NICs == "":
+            #                     ethe_address_NIC = "Null"
+            #                 else:
+            #                     ethe_address_NIC = str(eta1[a])
+            #             elif 'eth0' in x and b in x:
+            #                 wifi_address_NICs = str(eta1[b])
+            #                 if wifi_address_NICs == "":
+            #                     wifi_address_NIC = "Null"
+            #                 else:
+            #                     wifi_address_NIC = str(eta1[b])
+            #                 ethe_address_NICs = str(eta1['eth0'])
+            #                 if ethe_address_NICs == "":
+            #                     ethe_address_NIC = "Null"
+            #                 else:
+            #                     ethe_address_NIC = str(eta1['eth0'])
+            #             elif a in x and b in x:
+            #                 wifi_address_NICs = str(eta1[b])
+            #                 if wifi_address_NICs == "":
+            #                     wifi_address_NIC = "Null"
+            #                 else:
+            #                     wifi_address_NIC = str(eta1[b])
+            #                 ethe_address_NICs = str(eta1[a])
+            #                 if ethe_address_NICs == "":
+            #                     ethe_address_NIC = "Null"
+            #                 else:
+            #                     ethe_address_NIC = str(eta1[a])
+            #
+            #             elif 'eth0' in x:
+            #                 wifi_address_NIC = "Null"
+            #                 ethe_address_NIC = str(eta1['eth0'])
+            #             elif a in x:
+            #                 ethe_address_NIC = str(eta1[a])
+            #                 wifi_address_NIC = "Null"
+            #             elif 'wlan0' in x:
+            #                 wifi_address_NIC = str(eta1['wlan0'])
+            #                 ethe_address_NIC = "Null"
+            #             elif b in x:
+            #                 wifi_address_NIC = str(eta1[b])
+            #                 ethe_address_NIC = "Null"
+            #     except:
+            #         ethe_address_NIC = "Null"
+            #         wifi_address_NIC = "Null"
+            #
+            #     devwifiip = wifi_address_NIC
+            #     devethip = ethe_address_NIC
+            #     devips = [devethip, devwifiip]
+            #     try:
+            #         devips = [x for x in devips if x != "Null"]
+            #         try:
+            #             devIP = (" ".join(devips))
+            #         except:
+            #             devIP = (" ".join(devips))
+            #     except ValueError:
+            #         pass
+            #         devIP = (" ")
+            #
+            #     devip = str(devIP)
+
+                r22 = requests.get("http://cimi:8201/api/device-dynamic",headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
+                dynamics_info = r22.json()
+                rs_info = dynamics_info['deviceDynamics']
+                ips1 = [item['wifiAddress'] for item in rs_info]
+                ips2 = [item['ethernetAddress'] for item in rs_info]
+                ips3 = [*ips1, *ips2]
                 try:
-                    eta1 = ()
-                    ifconfig_out = docker_client2.containers.run("alpine:edge", "ifconfig", network_mode='host',
-                                                                 auto_remove=True).decode()
-                    ifconfig_list = str(ifconfig_out).split('\n\n')
-                    ifaces = []
-                    for item in ifconfig_list:
-                        lines = item.split('\n')
-                        name = lines[0].split(' ')[0]
-                        ipv4 = ''
-                        try:
-                            if lines[1][9:].split(' ')[1] == 'inet':
-                                ipv4 = lines[1][9:].split(' ')[2][5:]
-                        except IndexError:
-                            ipv4 = ''
-
-                    # print('Name: {}, IPv4: {}, IPv6: {} MAC: {}'.format(name, ipv4, ipv6, mac))
-                        if name.find('veth') == -1 and name != 'lo' and name.find('br') == -1 and name.find('docker') == -1 and len(name) > 0:
-                            ifaces.append({'iface': name, 'ipv4': ipv4})
-
-                    address = ([(x['iface'], x['ipv4']) for x in ifaces])
-                    eta1 = dict(address)
-
-                    x = []
-                    keys = eta1.keys()
-                    sub = "en"
-                    sub1 = "wl"
-                    a = ""
-                    b = ""
-                    for key in keys:
-                        x.append(key)
-                        a = (next((s for s in x if sub in s), None))
-                        b = (next((s for s in x if sub1 in s), None))
-                        if 'eth0' in x and 'wlan0' in x:
-                            wifi_address_NICs = str(eta1['wlan0'])
-                            if wifi_address_NICs == "":
-                                wifi_address_NIC = "Null"
-                            else:
-                                wifi_address_NIC = str(eta1['wlan0'])
-                            ethe_address_NICs = str(eta1['eth0'])
-                            if ethe_address_NICs == "":
-                                ethe_address_NIC = "Null"
-                            else:
-                                ethe_address_NIC = str(eta1['eth0'])
-
-                        elif a in x and 'wlan0' in x:
-
-                            wifi_address_NICs = str(eta1['wlan0'])
-                            if wifi_address_NICs == "":
-                                wifi_address_NIC = "Null"
-                            else:
-                                wifi_address_NIC = str(eta1['wlan0'])
-                            ethe_address_NICs = str(eta1[a])
-                            if ethe_address_NICs == "":
-                                ethe_address_NIC = "Null"
-                            else:
-                                ethe_address_NIC = str(eta1[a])
-                        elif 'eth0' in x and b in x:
-                            wifi_address_NICs = str(eta1[b])
-                            if wifi_address_NICs == "":
-                                wifi_address_NIC = "Null"
-                            else:
-                                wifi_address_NIC = str(eta1[b])
-                            ethe_address_NICs = str(eta1['eth0'])
-                            if ethe_address_NICs == "":
-                                ethe_address_NIC = "Null"
-                            else:
-                                ethe_address_NIC = str(eta1['eth0'])
-                        elif a in x and b in x:
-                            wifi_address_NICs = str(eta1[b])
-                            if wifi_address_NICs == "":
-                                wifi_address_NIC = "Null"
-                            else:
-                                wifi_address_NIC = str(eta1[b])
-                            ethe_address_NICs = str(eta1[a])
-                            if ethe_address_NICs == "":
-                                ethe_address_NIC = "Null"
-                            else:
-                                ethe_address_NIC = str(eta1[a])
-
-                        elif 'eth0' in x:
-                            wifi_address_NIC = "Null"
-                            ethe_address_NIC = str(eta1['eth0'])
-                        elif a in x:
-                            ethe_address_NIC = str(eta1[a])
-                            wifi_address_NIC = "Null"
-                        elif 'wlan0' in x:
-                            wifi_address_NIC = str(eta1['wlan0'])
-                            ethe_address_NIC = "Null"
-                        elif b in x:
-                            wifi_address_NIC = str(eta1[b])
-                            ethe_address_NIC = "Null"
-                except:
-                    ethe_address_NIC = "Null"
-                    wifi_address_NIC = "Null"
-
-                devwifiip = wifi_address_NIC
-                devethip = ethe_address_NIC
-                devips = [devethip, devwifiip]
-                try:
-                    devips = [x for x in devips if x != "Null"]
-                    try:
-                        devIP = (" ".join(devips))
-                    except:
-                        devIP = (" ".join(devips))
+                    childip = [y for y in ips1 if y!= None and y!= "192.168.7.1"]
                 except ValueError:
                     pass
-                    devIP = (" ")
+                    childip = ips3
 
-                devip = str(devIP)
-
-            r22 = requests.get("http://cimi:8201/api/device-dynamic",headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
-            dynamics_info = r22.json()
-            rs_info = dynamics_info['deviceDynamics']
-            ips1 = [item['wifiAddress'] for item in rs_info]
-            ips2 = [item['ethernetAddress'] for item in rs_info]
-            ips3 = [*ips1, *ips2]
-            try:
-                childip = [y for y in ips3 if y!= "Null"]
-            except ValueError:
-                pass
-                childip = ips3
-
-            backupip = ""
-            authenticated = True
-            connect = True
-            isleader = True
+                backupip = ""
+                authenticated = True
+                connect = True
+                isleader = True
 
 
-            agentResource1_info = {"device_id": dID, "device_ip": devip, "leader_id": dID, "leader_ip": devip,
+                agentResource1_info = {"device_id": dID, "device_ip": devip, "leader_id": dID, "leader_ip": devip,
                                    "authenticated": authenticated, "connected": connect, "isLeader": isleader,
                                    "backup_ip": backupip, "childrenIPs": childip}
-            agentResource_info = {"device_id": dID, "device_ip": devip, "leader_id": MyleaderID, "leader_ip": devip, "backup_ip": backupip, "childrenIPs": childip}
-            agentRes_info = json.dumps(agentResource_info)
-            agentRes1_info = json.dumps(agentResource1_info)
+                agentResource_info = {"device_id": dID, "device_ip": devip, "leader_id": MyleaderID, "leader_ip": devip, "backup_ip": backupip, "childrenIPs": childip}
+                agentRes_info = json.dumps(agentResource_info)
+                agentRes1_info = json.dumps(agentResource1_info)
 
 
-            if agentResource_info['device_ip'] is "Null" and agentResource1_info['device_ip'] is "Null":
-                print("Wait for the Alpine container to up")
-            elif agentResource_info['device_ip'] is "" and agentResource1_info ['device_ip'] is "":
-                print("Wait for the Alpine container to up")
-            elif agentResource_info['device_ip'] is "None, None" and agentResource1_info ['device_ip'] is "None, None":
-                print("Wait for the Alpine container to up")
-            elif agentResource_info['device_ip'] is "Null, Null" and agentResource1_info ['device_ip'] is "Null, Null":
-                print("Wait for the Alpine container to up")
-            else:
-                try:
-                    r91 = requests.get("http://cimi:8201/api/agent", headers={"slipstream-authn-info": "internal ADMIN"},verify=False)
-                    print("Getting the Agent resource info for leader-agent: ", r91, r91.request, r91.reason, r91.json())
-                    agentresource = r91.json()
+                if agentResource_info['device_ip'] is "Null" and agentResource1_info['device_ip'] is "Null":
+                    print("WDevice IP has not been captured!!!")
+                elif agentResource_info['device_ip'] is "" and agentResource1_info ['device_ip'] is "":
+                    print("Device IP has not been captured!!!")
+                elif agentResource_info['device_ip'] is "None, None" and agentResource1_info ['device_ip'] is "None, None":
+                    print("Device IP has not been captured!!!")
+                elif agentResource_info['device_ip'] is "Null, Null" and agentResource1_info ['device_ip'] is "Null, Null":
+                    print("Device IP has not been captured!!!")
+                else:
                     try:
-                        self.agentresourceid = next(item['id'] for item in agentresource['agents'] if 'id' in item)
-                        agresid = str(self.agentresourceid)
-                        url_point = "http://cimi:8201/api/"
-                        end_url_point = str(url_point + agresid)
-                    except:
-                        pass
+                        r91 = requests.get("http://cimi:8201/api/agent", headers={"slipstream-authn-info": "internal ADMIN"},verify=False)
+                        print("Getting the Agent resource info for leader-agent: ", r91, r91.request, r91.reason, r91.json())
+                        agentresource = r91.json()
+                        try:
+                            self.agentresourceid = next(item['id'] for item in agentresource['agents'] if 'id' in item)
+                            agresid = str(self.agentresourceid)
+                            url_point = "http://cimi:8201/api/"
+                            end_url_point = str(url_point + agresid)
+                        except:
+                            pass
 
-                    if self.agentresourceid is "agent":
+                        if self.agentresourceid is "agent":
+                            print("Agent resource is not yet created!!! Wait for few times")
+                        else:
+                            r6 = requests.put(end_url_point, headers={"slipstream-authn-info": "internal ADMIN"},json=agentResource_info, verify=False)
+                            print("Updating agent resource info: ", r6, r6.request, r6.reason, r6.json())
+                            r9 = requests.get(end_url_point, headers={"slipstream-authn-info": "internal ADMIN"},verify=False)
+                            print("Response to see updated agent resource info: ", r9, r9.request, r9.reason, r9.json())
+
+
+                    except ConnectionError as e:
                         print("Agent resource is not yet created!!! Wait for few times")
-                    else:
-                        r6 = requests.put(end_url_point, headers={"slipstream-authn-info": "internal ADMIN"},json=agentResource_info, verify=False)
-                        print("Updating agent resource info: ", r6, r6.request, r6.reason, r6.json())
-                        r9 = requests.get(end_url_point, headers={"slipstream-authn-info": "internal ADMIN"},verify=False)
-                        print("Response to see updated agent resource info: ", r9, r9.request, r9.reason, r9.json())
-
-
-                except ConnectionError as e:
-                    print("Agent resource is not yet created!!! Wait for few times")
 
             t.sleep(10)
+        else:
+            print("Device IP has not been captured!!!")
 
 
-#Fog Area resource information storing into the CIMI+Dataclay
+##Fog Area resource information storing into the CIMI+Dataclay##
     def fogarea(self):
 
         t.sleep(60)
@@ -667,9 +680,6 @@ class Main():
 
                     else:
                         pass
-                    #timest = int(mdd['updated'])
-                    #isotime = datetime.fromtimestamp(timest).isoformat()
-                    #mdd['updated'] = isotime
                 mdrs_info = rsmd_info
                 #mdrs = {"deviceDynamics":mdrs_info}
 

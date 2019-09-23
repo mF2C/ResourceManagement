@@ -1,0 +1,7 @@
+requests
+py-cpuinfo
+psutil
+flask
+urllib3
+docker
+Retry
