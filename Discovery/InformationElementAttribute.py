@@ -4,7 +4,7 @@ class InformationElementAttribute(object):
     #definition of the different hex codes for each urgency level
     URGENCY_DICT = {"01":"HIGH","02":"MEDIUM", "03":"LOW"}
     #definition of the hex codes of the different VSIE attributes
-    TYPES = {"01":"Leader ID", "02":"Service type", "03":"Reward", "04": "Urgency level"}
+    TYPES = {"01": "Leader ID","02":"Service type", "03":"Reward", "04": "Urgency level"}
     
     SERVICE_TYPE_DICT_SWAPPED = {y:x for x,y in SERVICE_TYPE_DICT.items()}
     URGENCY_DICT_SWAPPED = {y:x for x,y in URGENCY_DICT.items()}

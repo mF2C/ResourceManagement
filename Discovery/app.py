@@ -17,11 +17,12 @@ def get_discovery_api():
 
 @app.route('/api/v1/resource-management/discovery/broadcast/', methods=['POST'])
 def start_broadcast():
-    if not request.json or not 'broadcast_frequency' in request.json or not "interface_name" in request.json or not 'config_file' in request.json:
+    if not request.json or not 'broadcast_frequency' in request.json or not "interface_name" in request.json or not 'config_file' or not 'leader_id' in request.json:
         abort(400)
     beacon_interval = request.json['broadcast_frequency']
     interface_name = request.json['interface_name']
     config_file = request.json['config_file']
+    leader_id = request.json['leader_id']
     interfaces = netifaces.interfaces()
     #check if the given interface really exists
     if interface_name not in interfaces:
@@ -35,7 +36,7 @@ def start_broadcast():
             is_running = Broadcaster.check_active()
             #check if the broadcaster is already running in order not to run it twice
             if not is_running:
-                encoding_error = Broadcaster.fill_beacon_fields(beacon_interval, interface_name,config_file)
+                encoding_error = Broadcaster.fill_beacon_fields(beacon_interval, interface_name,config_file,leader_id)
                 if not encoding_error:   
                     msg = Broadcaster.start_broadcast()
                     return jsonify({'message': msg})
