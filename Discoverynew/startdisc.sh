@@ -196,6 +196,9 @@ then
   iw phy "$PHY" set netns "$pid"
   #Bring the wireless interface up
   docker exec -d "$DOCKER_NAME_DISCOVERY" ifconfig "$WIFI_DEV" up
+  docker exec -d "$DOCKER_NAME_DISCOVERY" sed -i 's/ff22cc/ff22dd/g' Vsie.py
+  docker exec -d "$DOCKER_NAME_DISCOVERY" sed -i 's/ff:22:cc/ff:22:dd/g' Scanner.py
+
 
   if [[ "$IS_LEADER" == "True" ]]
   then
