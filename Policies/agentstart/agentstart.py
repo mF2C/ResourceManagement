@@ -205,6 +205,14 @@ class AgentStart:
                     self.discovery_failed = True
                 LOG.debug(self.TAG + 'Discovery JOIN trigger Done.')
 
+            # 4.3 If not detected or failed, static configuration if setup
+            if self.discovery_failed or (self.detectedLeaderID is None and self.MACaddr is None and self.bssid is None):
+                LOG.debug(self.TAG + 'Discovery failed or leader was not detected. Fetching deviceIP and leaderIP from env variables.')
+                self.deviceIP = CPARAMS.DEVICE_IP_FLAG
+                self.leaderIP = CPARAMS.LEADER_IP_FLAG
+
+            LOG.info(self.TAG + 'deviceIP={}, leaderIP={}'.format(self.deviceIP, self.leaderIP))
+
             # 5. CAU client
             if self._connected:
                 self.cauclient_failed = True
@@ -380,7 +388,7 @@ class AgentStart:
             return
 
         # Create/Modify Agent Resource
-        self.deviceIP = CPARAMS.LEADER_DISCOVERY_IP  # Real value updated in categorization
+        self.deviceIP = CPARAMS.LEADER_DISCOVERY_IP if CPARAMS.DEVICE_IP_FLAG is None else CPARAMS.DEVICE_IP_FLAG
         self._cimi_agent_resource = AgentResource(self.deviceID, self.deviceIP, True,
                                                   True, self.imLeader)
         # deprecated: real values of Auth and Conn (as now are None in the Leader)
@@ -450,17 +458,21 @@ class AgentStart:
             'interface': CPARAMS.WIFI_DEV_FLAG,
             'bssid': self.bssid
         }
-        r = requests.post(self.URL_DISCOVERY_JOIN, json=payload)
+        try:
+            r = requests.post(self.URL_DISCOVERY_JOIN, json=payload, timeout=20.)
+        except (timeout, timeout2):
+            LOG.error(self.TAG + 'JOIN trigger timeout.')
+            return False
         rjson = r.json()
         if r.status_code != 200:
-            LOG.warning('JOIN operation failed. Reply from discovery: {}'.format(rjson['message']))
+            LOG.warning(self.TAG + 'JOIN operation failed. Reply from discovery: {}'.format(rjson['message']))
             return False
         else:
             LOG.debug(self.TAG + 'Sending MYIP trigger to Discovery...')
             try:
-                r2 = requests.get(self.URL_DISCOVERY_MYIP, timeout=10.)
+                r2 = requests.get(self.URL_DISCOVERY_MYIP, timeout=20.)
             except (timeout, timeout2):
-                LOG.error('MYIP trigger timeout.')
+                LOG.error(self.TAG + 'MYIP trigger timeout.')
                 return False
             rjson2 = r2.json()
             if r2.status_code != 200:

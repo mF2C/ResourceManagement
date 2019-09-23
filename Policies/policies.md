@@ -29,6 +29,39 @@ Replace *<version>* with a valid uploaded version [here](https://cloud.docker.co
 2. Install all the library dependencies: `pip3 install -r requirements.txt`
 2. Execute the following command: `python3 main.py`
 
+
+### Environment variables
+
+To run policies module along other mF2C components, is necessary to specify the following environment variables:
+
+```yaml
+- "MF2C=True"
+```
+
+##### The interface used by discovery is specified in:
+
+```yaml
+- "WIFI_DEV_FLAG="
+```
+
+**NOTE**: Specific configurations are required in Discovery to attach the interface. This parameter is only used to inform Discovery at the startup.
+
+##### To modify the role of the agent (normal/leader): 
+
+```yaml
+- "isLeader=False"
+```
+
+##### To specify static leader and device IPs:
+
+```yaml
+- "leaderIP="
+- "deviceIP="
+```
+
+**NOTE**: Only used when Discovery cannot detect a nearby Leader. These variables should only be used for testing purposes and internal mF2C procedures may fail if they are modified.
+
+
 ### API
 
 All the API calls are made via REST. The endpoints and required parameters can be consulted on [http://{policies_address}:46050/](http://localhost:46050/)
@@ -186,7 +219,17 @@ curl -X GET "http://localhost/api/v2/resource-management/policies/roleChange/lea
 
 ## CHANGELOG
 
-### 2.0.4 (10/09/2019)
+### 2.0.6 (23/09/2019)
+
+#### Added
+
+    + Static configuration for deviceIP and leaderIP restored for custom testing purposes.
+    
+#### Changed
+
+    * Timeout added on discovery JOIN and MYIP triggers to avoid infinite loops.
+
+### 2.0.5 (18/09/2019)
 
 #### Changed
 

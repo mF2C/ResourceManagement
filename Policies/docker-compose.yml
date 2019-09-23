@@ -7,5 +7,7 @@ services:
       - "46050:46050"
     environment:
       - "MF2C=True"
-      - "WIFI_DEV="
+      - "WIFI_DEV_FLAG="
       - "isLeader=False"
+      - "leaderIP="
+      - "deviceIP="
