@@ -95,23 +95,15 @@ def static_info():
                      return net_stat
 
                 else:
-                    time.sleep(45)
                     try:
-                        ifconfig_out = docker_client1.containers.run("alpine:latest", "ifconfig", network_mode='host', auto_remove=True).decode()
-                        time.sleep (10)
-                        ifconfig_list = str(ifconfig_out).split('\n\n')
-                        ifaces = []
-
-                        for item in ifconfig_list:
-                            lines = item.split('\n')
-                            name = lines[0].split(' ')[0]
-                            if name.find('veth') == -1 and name != 'lo' and name.find('br') == -1 and name.find('docker') == -1 and len(name) > 0:
-                                ifaces.append({'iface': name})
-
-                        eta = ([(x['iface']) for x in ifaces])
-                        eta2 = str(', '.join(eta))
-                        eta3 = str(eta2)
-                        eta4 = subprocess.Popen("ip addr show tun0", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                        starturl1 = "http://"
+                        endurl1 = "/api/get_vpn_ip"
+                        finalurl1 = str(starturl1 + ddevIP + endurl1)
+                        response_vpnclient = requests.get(finalurl1, verify=False)
+                        res_vpn = response_vpnclient.json()
+                        devvpnIP = res_vpn['ip']
+                        ddisIP = str(devvpnIP)
+                        eta3 = "WiFi"
                     except:
                         eta3 = 'Null'
 

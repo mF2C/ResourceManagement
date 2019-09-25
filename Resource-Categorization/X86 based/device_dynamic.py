@@ -225,172 +225,112 @@ def dynamic_info():
                             wifi_throughput_info = [str(item) for item in wifi_throughput_info1]
                             ethernet_throughput_info = [str(item) for item in ethernet_throughput_info1]
 
+
                     net_dyna = json.dumps({'ethernetThroughputInfo': wifi_throughput_info, 'wifiThroughputInfo': ethernet_throughput_info,'ethernetAddress': "None", 'wifiAddress': ddisIP})
                     return net_dyna
 
                 else:
                     try:
-                        eta1 = ()
-                        eta2 = ()
-                        time.sleep(45)
+                        starturl1 = "http://"
+                        endurl1 = "/api/get_vpn_ip"
+                        finalurl1 = str(starturl1 + ddevIP + endurl1)
+                        response_vpnclient = requests.get(finalurl1, verify=False)
+                        res_vpn = response_vpnclient.json()
+                        devvpnIP = res_vpn['ip']
+                        ddisIP = str(devvpnIP)
+                        OS = platform.system()
 
-                        ifconfig_out = docker_client.containers.run("alpine:latest", "ifconfig", network_mode='host',auto_remove=True).decode()
-                        time.sleep(10)
-                        ifconfig_list = str(ifconfig_out).split('\n\n')
-                        ifaces = []
-                        for item in ifconfig_list:
-                            lines = item.split('\n')
-                            name = lines[0].split(' ')[0]
-                            ipv4 = ''
-                            Rx = ''
-                            Tx = ''
-                            try:
-                                mac = lines[0][9:].split(' ')[5]
-                            except IndexError:
-                                mac = ''
-
-                            try:
-                                if lines[1][9:].split(' ')[1] == 'inet':
-                                    ipv4 = lines[1][9:].split(' ')[2][5:]
-                            except IndexError:
-                                ipv4 = ''
-
-                            try:
-                                if lines[1][9:].split(' ')[1] == 'RX':
-                                    Rx = lines[1][9:].split('errors')[0]
-                                elif lines[2][9:].split(' ')[1] == 'RX':
-                                    Rx = lines[2][9:].split('errors')[0]
-                                elif lines[3][9:].split(' ')[1] == 'RX':
-                                    Rx = lines[3][9:].split('errors')[0]
-                                elif lines[4][9:].split(' ')[1] == 'RX':
-                                    Rx = lines[4][9:].split('errors')[0]
-                            except IndexError:
-                                Rx = ''
-
-                            try:
-                                if lines[1][9:].split(' ')[1] == 'TX':
-                                    Tx = lines[1][9:].split('errors')[0]
-                                elif lines[2][9:].split(' ')[1] == 'TX':
-                                    Tx = lines[2][9:].split('errors')[0]
-                                elif lines[3][9:].split(' ')[1] == 'TX':
-                                    Tx = lines[3][9:].split('errors')[0]
-                                elif lines[4][9:].split(' ')[1] == 'TX':
-                                    Tx = lines[4][9:].split('errors')[0]
-                                elif lines[5][9:].split(' ')[1] == 'TX':
-                                    Tx = lines[5][9:].split('errors')[0]
-                            except IndexError:
-                                Tx = ''
-
-                    # print('Name: {}, IPv4: {}, IPv6: {} MAC: {}'.format(name, ipv4, ipv6, mac))
-                            if name.find('veth') == -1 and name != 'lo' and name.find('br') == -1 and name.find('docker') == -1 and len(name) > 0:
-                                ifaces.append({'iface': name, 'ipv4': ipv4, 'mac': mac, 'Rx': Rx, 'Tx': Tx})
-
-                        address = ([(x['iface'], x['ipv4']) for x in ifaces])
-                        IO = ([(x['iface'], x['Rx'], x['Tx']) for x in ifaces])
-                        eta1 = my_dict(address)
-                        eta2 = my_dict([(a, (b, c)) for a, b, c in IO])
-
-                        x = []
-                        keys = eta1.keys()
-                        sub = 'en'
-                        sub1 = 'wl'
-                        a = ''
-                        b = ''
-                        for key in keys:
-                            x.append(key)
-                            a = (next((s for s in x if sub in s), None))
-                            b = (next((s for s in x if sub1 in s), None))
+                        if OS == 'Linux':
+                            net_if_add = psutil.net_if_addrs()
+                            net_if_add = my_dict(net_if_add)
+                            net_io = psutil.net_io_counters(pernic=True)
+                            net_io = my_dict(net_io)
+                            x = []
+                            keys = net_io.keys()
+                            sub = 'enp'
+                            sub1 = 'wl'
+                            a = ''
+                            b = ''
+                            for key in keys:
+                                x.append(key)
+                                a = (next((s for s in x if sub in s), None))
+                                b = (next((s for s in x if sub1 in s), None))
                             if 'eth0' in x and 'wlan0' in x:
-                                wifi_throughput_info1 = list(eta2['wlan0'])
+                                wifi_throughput_info1 = list(net_io['wlan0'])
+                                ethernet_throughput_info1 = list(net_io['eth0'])
                                 wifi_throughput_info = [str(item) for item in wifi_throughput_info1]
-                                ethernet_throughput_info1 = list(eta2['eth0'])
                                 ethernet_throughput_info = [str(item) for item in ethernet_throughput_info1]
-                                wifi_address_NICs = str(eta1['wlan0'])
-                                if wifi_address_NICs == '':
-                                    wifi_address_NIC = 'Null'
-                                else:
-                                    wifi_address_NIC = str(eta1['wlan0'])
-                                ethe_address_NICs = str(eta1['eth0'])
-                                if ethe_address_NICs == '':
-                                    ethe_address_NIC = 'Null'
-                                else:
-                                    ethe_address_NIC = str(eta1['eth0'])
 
                             elif a in x and 'wlan0' in x:
-                                wifi_throughput_info1 = list(eta2['wlan0'])
+                                wifi_throughput_info1 = list(net_io['wlan0'])
+                                ethernet_throughput_info1 = list(net_io[a])
                                 wifi_throughput_info = [str(item) for item in wifi_throughput_info1]
-                                ethernet_throughput_info1 = list(eta2[a])
                                 ethernet_throughput_info = [str(item) for item in ethernet_throughput_info1]
-                                wifi_address_NICs = str(eta1['wlan0'])
-                                if wifi_address_NICs == '':
-                                    wifi_address_NIC = 'Null'
-                                else:
-                                    wifi_address_NIC = str(eta1['wlan0'])
-                                ethe_address_NICs = str(eta1[a])
-                                if ethe_address_NICs == '':
-                                    ethe_address_NIC = 'Null'
-                                else:
-                                    ethe_address_NIC = str(eta1[a])
+
                             elif 'eth0' in x and b in x:
-                                wifi_throughput_info1 = list(eta2[b])
+                                wifi_throughput_info1 = list(net_io[b])
+                                ethernet_throughput_info1 = list(net_io['eth0'])
                                 wifi_throughput_info = [str(item) for item in wifi_throughput_info1]
-                                ethernet_throughput_info1 = list(eta2['eth0'])
                                 ethernet_throughput_info = [str(item) for item in ethernet_throughput_info1]
-                                wifi_address_NICs = str(eta1[b])
-                                if wifi_address_NICs == '':
-                                    wifi_address_NIC = 'Null'
-                                else:
-                                    wifi_address_NIC = str(eta1[b])
-                                ethe_address_NICs = str(eta1['eth0'])
-                                if ethe_address_NICs == '':
-                                    ethe_address_NIC = 'Null'
-                                else:
-                                    ethe_address_NIC = str(eta1['eth0'])
+
                             elif a in x and b in x:
-                                wifi_throughput_info1 = list(eta2[b])
+                                wifi_throughput_info1 = list(net_io[b])
+                                ethernet_throughput_info1 = list(net_io[a])
                                 wifi_throughput_info = [str(item) for item in wifi_throughput_info1]
-                                ethernet_throughput_info1 = list(eta2[a])
                                 ethernet_throughput_info = [str(item) for item in ethernet_throughput_info1]
-                                wifi_address_NICs = str(eta1[b])
-                                if wifi_address_NICs == '':
-                                    wifi_address_NIC = 'Null'
-                                else:
-                                    wifi_address_NIC = str(eta1[b])
-                                ethe_address_NICs = str(eta1[a])
-                                if ethe_address_NICs == '':
-                                    ethe_address_NIC = 'Null'
-                                else:
-                                    ethe_address_NIC = str(eta1[a])
 
                             elif 'eth0' in x:
-                                wifi_throughput_info1 = list(eta2['Null'])
+                                wifi_throughput_info1 = list(net_io['Null'])
+                                ethernet_throughput_info1 = list(net_io['eth0'])
                                 wifi_throughput_info = [str(item) for item in wifi_throughput_info1]
-                                ethernet_throughput_info1 = list(eta2['eth0'])
                                 ethernet_throughput_info = [str(item) for item in ethernet_throughput_info1]
-                                wifi_address_NIC = 'Null'
-                                ethe_address_NIC = str(eta1['eth0'])
+
                             elif a in x:
-                                wifi_throughput_info1 = list(eta2['Null'])
+                                wifi_throughput_info1 = list(net_io['Null'])
+                                ethernet_throughput_info1 = list(net_io[a])
                                 wifi_throughput_info = [str(item) for item in wifi_throughput_info1]
-                                ethernet_throughput_info1 = list(eta2[a])
                                 ethernet_throughput_info = [str(item) for item in ethernet_throughput_info1]
-                                ethe_address_NIC = str(eta1[a])
-                                wifi_address_NIC = 'Null'
+
                             elif 'wlan0' in x:
-                                wifi_throughput_info1 = list(eta2['wlan0'])
+                                wifi_throughput_info1 = list(net_io['wlan0'])
+                                ethernet_throughput_info1 = list(net_io['Null'])
                                 wifi_throughput_info = [str(item) for item in wifi_throughput_info1]
-                                ethernet_throughput_info1 = list(eta2['Null'])
                                 ethernet_throughput_info = [str(item) for item in ethernet_throughput_info1]
-                                wifi_address_NIC = str(eta1['wlan0'])
-                                ethe_address_NIC = 'Null'
 
                             elif b in x:
-                                wifi_throughput_info1 = list(eta2[b])
+                                wifi_throughput_info1 = list(net_io[b])
+                                ethernet_throughput_info1 = list(net_io['Null'])
                                 wifi_throughput_info = [str(item) for item in wifi_throughput_info1]
-                                ethernet_throughput_info1 = list(eta2['Null'])
                                 ethernet_throughput_info = [str(item) for item in ethernet_throughput_info1]
-                                wifi_address_NIC = str(eta1[b])
-                                ethe_address_NIC = 'Null'
+                        else:
+                            net_if_add = psutil.net_if_addrs()
+                            net_io = psutil.net_io_counters(pernic=True)
+                            x = []
+                            for key in net_io:
+                                x.append(key)
+                            if 'Ethernet' and 'Wi-Fi' in x:
+                                wifi_throughput_info1 = list(net_io['Wi-Fi'])
+                                ethernet_throughput_info1 = list(net_io['Ethernet'])
+                                wifi_throughput_info = [str(item) for item in wifi_throughput_info1]
+                                ethernet_throughput_info = [str(item) for item in ethernet_throughput_info1]
+
+                            elif 'Ethernet' in x:
+                                wifi_throughput_info1 = list(net_io['Null'])
+                                ethernet_throughput_info1 = list(net_io['Ethernet'])
+                                wifi_throughput_info = [str(item) for item in wifi_throughput_info1]
+                                ethernet_throughput_info = [str(item) for item in ethernet_throughput_info1]
+
+                            elif 'Wi-Fi' in x:
+                                wifi_throughput_info1 = list(net_io['Wi-Fi'])
+                                ethernet_throughput_info1 = list(net_io['Null'])
+                                wifi_throughput_info = [str(item) for item in wifi_throughput_info1]
+                                ethernet_throughput_info = [str(item) for item in ethernet_throughput_info1]
+
+                        net_dyna = json.dumps({'ethernetThroughputInfo': wifi_throughput_info,
+                                               'wifiThroughputInfo': ethernet_throughput_info,
+                                               'ethernetAddress': "None", 'wifiAddress': ddisIP})
+                        return net_dyna
+
 
                     except:
                         ethe_address_NIC = 'Null'
@@ -402,10 +342,11 @@ def dynamic_info():
                     return net_dyna
 
         except:
-            net_dyna = json.dumps(
-                {"ethernetThroughputInfo": 'None', "wifiThroughputInfo": 'None',
-                 "ethernetAddress": 'None', "wifiAddress": 'None'})
-
+            ethe_address_NIC = 'Null'
+            wifi_address_NIC = 'Null'
+            ethernet_throughput_info = list('Null')
+            wifi_throughput_info = list('Null')
+            net_dyna = json.dumps({'ethernetThroughputInfo': ethernet_throughput_info, 'wifiThroughputInfo': wifi_throughput_info,'ethernetAddress': ethe_address_NIC, 'wifiAddress': wifi_address_NIC})
             return net_dyna
 
     # def requests_retry_session(
