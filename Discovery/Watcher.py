@@ -1,5 +1,5 @@
 from subprocess import call,Popen,PIPE
-import time,sys
+import time,sys,psutil
 import json,requests
 
 class Watcher(object):
@@ -37,8 +37,23 @@ class Watcher(object):
             
     @staticmethod
     def stop():
-        command = ["pkill", "hostapd_cli"]
-        call(command)
+        watching = Watcher.check_watching_running("hostapd_cli")
+        if not watching:
+            return "Watcher already inactive!"
+        
+        cmd = ['pkill','hostapd_cli']
+        pipes = Popen(cmd, stdout=PIPE, stderr=PIPE)
+        std_out, std_err = pipes.communicate()
+
+        if pipes.returncode != 0:
+            # an error happened!
+            msg = "Unable to stop watching, Return Code: "+str(pipes.returncode)
+            
+        msg = std_out.decode('utf-8')
+        if not Watcher.check_watching_running("hostapd_cli"):
+            msg = "Watcher stopped successfully!"
+
+        return msg
             
     @staticmethod
     def on_leader_connection_changed():
@@ -103,6 +118,19 @@ class Watcher(object):
             
         except requests.exceptions.RequestException as e:
             print("An exception occurred while trying to connect to CIMI!")
+            
+    @staticmethod       
+    def check_watching_running(processName):
+
+        #Iterate over the all the running process
+        for proc in psutil.process_iter():
+            try:
+                # Check if process name contains the given name string.
+                if processName.lower() in proc.name().lower():
+                    return True
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                pass
+        return False
         
         
         
