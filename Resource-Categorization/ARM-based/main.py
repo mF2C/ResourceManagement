@@ -43,7 +43,7 @@ class Main():
         self.fogresourceid = None
         self.agentresourceid = "agent"
         self.status = "connected"
-        self.cimi_endpoint = getenv("LEADER_ENDPOINT","cimi:8201")
+        self.cimi_endpoint = getenv("LEADER_ENDPOINT","http://cimi:8201")
 
 ##Start the program##
 
@@ -116,16 +116,16 @@ class Main():
         staticinfo = json.loads(stat)
         devStatic= {**devID, **staticinfo, **isleader1}
         jsonString_merged_static = devStatic
-        print("Device information for normal agent: ", jsonString_merged_static)
+        print("Device information for micro agent: ", jsonString_merged_static)
 
         try:
-            r = requests.post("http://{}/api/device".format(self.cimi_endpoint), headers={"slipstream-authn-info": "internal ADMIN"}, json=jsonString_merged_static, verify=False)
-            print("Posting device resource info for normal-agent: ", r, r.request, r.reason, r.json())
+            r = requests.post("{}/api/device".format(self.cimi_endpoint), headers={"slipstream-authn-info": "internal ADMIN"}, json=jsonString_merged_static, verify=False)
+            print("Posting device resource info for micro-agent: ", r, r.request, r.reason, r.json())
 
             #capturing the corresponding cimi resource-id
             self.deviceID_cimiresource = r.json()['resource-id']
-            r1 = requests.get("http://{}/api/device".format(self.cimi_endpoint), headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
-            print("Response to see posted device resource info for normal-agent: ", r1, r1.request, r1.reason, r1.json())
+            r1 = requests.get("{}/api/device".format(self.cimi_endpoint), headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
+            print("Response to see posted device resource info for micro-agent: ", r1, r1.request, r1.reason, r1.json())
 
         except Exception as e:
             print (e)
@@ -141,11 +141,10 @@ class Main():
         global jsonString_merged_dynamic
         while self.deviceID_cimiresource is None:
             t.sleep(0.1)
-        ## TODO:- need to add some lines of code and also change some code in order to add the CIMI provided reosurce-id and leaderID ##
         devID = {"device": {'href': str(self.deviceID_cimiresource)}}
         target_deviceSensor = getenv('targetDeviceSensor')
         if target_deviceSensor == 'B':
-            sensors ={
+            sensors = {
                 "sensors": [
                     {
                         "sensorType": "[\"acceleration\", \"satelliteCount\", \"voltage\", \"battery\", \"inclination\", \"proximity\", \"bearing\", \"velocity\", \"current\", \"waterLevel\", \"temperature\", \"humidity\", \"pressure\", \"latitude\", \"longitude\"]",
@@ -170,7 +169,7 @@ class Main():
             sensormodel = None
             sensorconnection = None
             sensors = {"sensors": [{'sensorType': str(sensortype), 'sensorModel': str(sensormodel),
-                                'sensorConnection': str(sensorconnection)}]}
+                                    'sensorConnection': str(sensorconnection)}]}
 
         statusinfo = {"status": str(self.status)}
 
@@ -180,36 +179,36 @@ class Main():
             print("dyna: ", dyna)
             dynamicinfo = json.loads(dyna)
             wifi_ip = dynamicinfo['wifiAddress']
-            if wifi_ip=="Null":
+            if wifi_ip == "Null":
                 print("IP Address is not retrieve yet!!!")
             else:
                 devDynamic = {**devID, **dynamicinfo, **sensors, **statusinfo}
                 jsonString_merged_dynamic = devDynamic
-                print("Device-Dynamic information for normal agent: ", jsonString_merged_dynamic)
+                print("Device-Dynamic information for Micro Agent: ", jsonString_merged_dynamic)
                 try:
                     if self.deviceDynamicID_cimiresource is None:
-                        r2 = requests.post("http://{}/api/device-dynamic".format(self.cimi_endpoint),
+                        r2 = requests.post("{}/api/device-dynamic".format(self.cimi_endpoint),
                                            headers={"slipstream-authn-info": "internal ADMIN"},
                                            json=jsonString_merged_dynamic, verify=False)
-                        print("Posting device-dynamic resource info for normal-agent: ", r2, r2.request, r2.reason,
+                        print("Posting device-dynamic resource info for micro-agent: ", r2, r2.request, r2.reason,
                               r2.json())
                         self.deviceDynamicID_cimiresource = r2.json()['resource-id']
-                        r3 = requests.get("http://{}/api/device-dynamic".format(self.cimi_endpoint),
+                        r3 = requests.get("{}/api/device-dynamic".format(self.cimi_endpoint),
                                           headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
-                        print("Response to see posted device-dynamic resource info for normal-agent: ", r3, r3.request,
+                        print("Response to see posted device-dynamic resource info for micro-agent: ", r3, r3.request,
                               r3.reason, r3.json())
                     else:
                         cimiResourceID = {"resource-id": self.deviceDynamicID_cimiresource}
                         devDynamic = {**devID, **dynamicinfo, **sensors, **cimiResourceID}
                         jsonString_merged_dynamic = devDynamic
-                        r4 = requests.put("http://{}/api/device-dynamic".format(self.cimi_endpoint),
+                        r4 = requests.put("{}/api/device-dynamic".format(self.cimi_endpoint),
                                           headers={"slipstream-authn-info": "internal ADMIN"},
                                           json=jsonString_merged_dynamic, verify=False)
-                        print("Updating device-dynamic resource info for normal-agent: ", r4, r4.request, r4.reason,
+                        print("Updating device-dynamic resource info for micro-agent: ", r4, r4.request, r4.reason,
                               r4.json())
-                        r5 = requests.get("http://{}/api/device-dynamic".format(self.cimi_endpoint),
+                        r5 = requests.get("{}/api/device-dynamic".format(self.cimi_endpoint),
                                           headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
-                        print("Response to see updated device-dynamic resource info for normal-agent: ", r5, r5.request,
+                        print("Response to see updated device-dynamic resource info for micro-agent: ", r5, r5.request,
                               r5.reason, r5.json())
                 except ConnectionError as e:
                     print(e)
@@ -273,13 +272,13 @@ class Main():
                         print("Device IP is not retrieve yet!!!")
                     else:
                         try:
-                            r91 = requests.get("http://{}/api/agent".format(self.cimi_endpoint), headers={"slipstream-authn-info": "internal ADMIN"},verify=False)
+                            r91 = requests.get("{}/api/agent".format(self.cimi_endpoint), headers={"slipstream-authn-info": "internal ADMIN"},verify=False)
                             print("Getting the Agent resource info for normal-agent: ", r91, r91.request, r91.reason, r91.json())
                             agentresource = r91.json()
                             try:
                                 self.agentresourceid = next(item['id'] for item in agentresource['agents'] if 'id' in item)
                                 agresid = str(self.agentresourceid)
-                                url_point = "http://{}/api/".format(self.cimi_endpoint)
+                                url_point = "{}/api/".format(self.cimi_endpoint)
                                 end_url_point = str(url_point + agresid)
                             except:
                                 pass
@@ -317,13 +316,13 @@ class Main():
         print("Device information for leader-agent: ", jsonString_merged_static)
 
         try:
-            r = requests.post("http://{}/api/device".format(self.cimi_endpoint), headers={"slipstream-authn-info": "internal ADMIN"},
+            r = requests.post("{}/api/device".format(self.cimi_endpoint), headers={"slipstream-authn-info": "internal ADMIN"},
                               json=jsonString_merged_static, verify=False)
             print("Posting device resource info for leader-agent: ", r, r.request, r.reason, r.json())
 
             # capturing the corresponding cimi resource-id
             self.deviceID_cimiresource = r.json()['resource-id']
-            r1 = requests.get("http://{}/api/device".format(self.cimi_endpoint), headers={"slipstream-authn-info": "internal ADMIN"},
+            r1 = requests.get("{}/api/device".format(self.cimi_endpoint), headers={"slipstream-authn-info": "internal ADMIN"},
                               verify=False)
             print("Response to see posted device resource info for leader-agent: ", r1, r1.request, r1.reason, r1.json())
 
@@ -387,13 +386,13 @@ class Main():
                 print("Device-Dynamic information for Leader-agent: ", jsonString_merged_dynamic)
                 try:
                     if self.deviceDynamicID_cimiresource is None:
-                        r2 = requests.post("http://{}/api/device-dynamic".format(self.cimi_endpoint),
+                        r2 = requests.post("{}/api/device-dynamic".format(self.cimi_endpoint),
                                            headers={"slipstream-authn-info": "internal ADMIN"},
                                            json=jsonString_merged_dynamic, verify=False)
                         print("Posting device-dynamic resource info for leader-agent: ", r2, r2.request, r2.reason,
                               r2.json())
                         self.deviceDynamicID_cimiresource = r2.json()['resource-id']
-                        r3 = requests.get("http://{}/api/device-dynamic".format(self.cimi_endpoint),
+                        r3 = requests.get("{}/api/device-dynamic".format(self.cimi_endpoint),
                                           headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
                         print("Response to see posted device-dynamic resource info for leader-agent: ", r3, r3.request,
                               r3.reason, r3.json())
@@ -401,12 +400,12 @@ class Main():
                         cimiResourceID = {"resource-id": self.deviceDynamicID_cimiresource}
                         devDynamic = {**devID, **dynamicinfo, **sensors, **cimiResourceID}
                         jsonString_merged_dynamic = devDynamic
-                        r4 = requests.put("http://{}/api/device-dynamic".format(self.cimi_endpoint),
+                        r4 = requests.put("{}/api/device-dynamic".format(self.cimi_endpoint),
                                           headers={"slipstream-authn-info": "internal ADMIN"},
                                           json=jsonString_merged_dynamic, verify=False)
                         print("Updating device-dynamic resource info for leader-agent: ", r4, r4.request, r4.reason,
                               r4.json())
-                        r5 = requests.get("http://{}/api/device-dynamic".format(self.cimi_endpoint),
+                        r5 = requests.get("{}/api/device-dynamic".format(self.cimi_endpoint),
                                           headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
                         print("Response to see updated device-dynamic resource info for leader-agent: ", r5, r5.request,
                               r5.reason, r5.json())
@@ -450,7 +449,7 @@ class Main():
                     except:
                         devip = "None"
 
-                    r22 = requests.get("http://{}/api/device-dynamic".format(self.cimi_endpoint),headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
+                    r22 = requests.get("{}/api/device-dynamic".format(self.cimi_endpoint),headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
                     dynamics_info = r22.json()
                     rs_info = dynamics_info['deviceDynamics']
                     ips1 = [item['wifiAddress'] for item in rs_info]
@@ -478,13 +477,13 @@ class Main():
                         print("Device IP is not retrieve yet!!!")
                     else:
                         try:
-                            r91 = requests.get("http://{}/api/agent".format(self.cimi_endpoint), headers={"slipstream-authn-info": "internal ADMIN"},verify=False)
+                            r91 = requests.get("{}/api/agent".format(self.cimi_endpoint), headers={"slipstream-authn-info": "internal ADMIN"},verify=False)
                             print("Getting the Agent resource info for leader-agent: ", r91, r91.request, r91.reason, r91.json())
                             agentresource = r91.json()
                             try:
                                 self.agentresourceid = next(item['id'] for item in agentresource['agents'] if 'id' in item)
                                 agresid = str(self.agentresourceid)
-                                url_point = "http://{}/api/".format(self.cimi_endpoint)
+                                url_point = "{}/api/".format(self.cimi_endpoint)
                                 end_url_point = str(url_point + agresid)
                             except:
                                 pass
@@ -524,14 +523,14 @@ class Main():
 
         while self._running:
 
-            r23 = requests.get("http://{}/api/device".format(self.cimi_endpoint), headers={"slipstream-authn-info": "internal ADMIN"},
+            r23 = requests.get("{}/api/device".format(self.cimi_endpoint), headers={"slipstream-authn-info": "internal ADMIN"},
                                verify=False)
 
             devices_info = r23.json()
             ss_info = devices_info['devices']
             try:
 
-                r24 = requests.get("http://{}/api/device-dynamic".format(self.cimi_endpoint),headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
+                r24 = requests.get("{}/api/device-dynamic".format(self.cimi_endpoint),headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
 
                 dynamics_info = r24.json()
                 rs_info = dynamics_info['deviceDynamics']
@@ -550,7 +549,7 @@ class Main():
                         mdst = "unavailable"
                         ddresid = mdd['id']
                         ddsresid = str(ddresid)
-                        url_point = "http://{}/api/".format(self.cimi_endpoint)
+                        url_point = "{}/api/".format(self.cimi_endpoint)
                         dd_end_url_point = str(url_point + ddsresid)
                         mdstatus = {"status": mdst}
                         try:
@@ -561,7 +560,7 @@ class Main():
                                 print("For Fog-Area, updating device-dynamic resource info for die-out device: ", r411, r411.request, r411.reason, r411.json())
                             except:
                                 pass
-                            r511 = requests.get("http://{}/api/device-dynamic".format(self.cimi_endpoint),
+                            r511 = requests.get("{}/api/device-dynamic".format(self.cimi_endpoint),
                                                 headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
                             print("For Fog-Area, response to see updated device-dynamic resources info: ", r511, r511.request, r511.reason, r511.json())
 
@@ -714,11 +713,11 @@ class Main():
                     print("Fog Area info :", fogarealo_info)
                     try:
                         if self.fogresourceid is None:
-                            r7 = requests.post("http://{}/api/fog-area".format(self.cimi_endpoint),
+                            r7 = requests.post("{}/api/fog-area".format(self.cimi_endpoint),
                                        headers={"slipstream-authn-info": "internal ADMIN"}, json=fogarealo_info,
                                        verify=False)
                             print("Posted Fog-Area resource info: ", r7, r7.request, r7.reason, r7.json())
-                            r71 = requests.get("http://{}/api/fog-area".format(self.cimi_endpoint), headers={"slipstream-authn-info": "internal ADMIN"},verify=False)
+                            r71 = requests.get("{}/api/fog-area".format(self.cimi_endpoint), headers={"slipstream-authn-info": "internal ADMIN"},verify=False)
                             print("Response to GET the Fog-Area resource info: ", r71, r71.request, r71.reason, r71.json())
 
                             try:
@@ -727,11 +726,11 @@ class Main():
                                 print(k)
                                 print("No devices are attached with the leader")
                         else:
-                            r8 = requests.put("http://{}/api/fog-area".format(self.cimi_endpoint),
+                            r8 = requests.put("{}/api/fog-area".format(self.cimi_endpoint),
                                       headers={"slipstream-authn-info": "internal ADMIN"}, json=fogarealo_info,
                                       verify=False)
                             print("Updated Fog-Area resource info: ", r8, r8.request, r8.reason, r8.json())
-                            r81 = requests.get("http://{}/api/fog-area".format(self.cimi_endpoint),
+                            r81 = requests.get("{}/api/fog-area".format(self.cimi_endpoint),
                                            headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
                             print("Response to GET the updated Fog-Area resource info: ", r81, r81.request, r81.reason, r81.json())
 

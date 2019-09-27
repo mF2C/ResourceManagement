@@ -19,18 +19,14 @@ class my_dict(dict):
 def static_info():
 
     def hwsw_info():
+
         os_info = platform.platform()
-
         system_arch = platform.machine()
-
         a = cpuinfo.get_cpu_info()
         cpu_owner_info = a['brand']
         cpu_clock_speed = a['hz_advertised']
-
         physical_cpu = psutil.cpu_count(logical=False)
-
         logical_cpu = psutil.cpu_count()
-
         mem = psutil.virtual_memory()
         RAM = mem[0]
         total_ram_size = ((RAM / 1024) / 1024)
@@ -56,7 +52,7 @@ def static_info():
         elif agent_type == '3':
             at = 'Micro Agent'
         else:
-            at = 'Something is wrong'
+            at = 'empty'
 
 
         hwsw_stat = json.dumps({'os': os_info, 'arch':system_arch, 'cpuManufacturer': cpu_owner_info, 'physicalCores': physical_cpu,
@@ -66,9 +62,9 @@ def static_info():
 
         return hwsw_stat
 
-
     def net_stat_info():
          global ethe_address_NIC, wifi_address_NIC
+
 
          try:
             client = docker.from_env()
@@ -94,25 +90,8 @@ def static_info():
                 net_stat = json.dumps({"networkingStandards": 'WiFi'})
 
             else:
-                time.sleep(45)
-                try:
-                    ifconfig_out = docker_client1.containers.run("alpine:latest", "ifconfig", network_mode='host', auto_remove=True).decode()
-                    time.sleep (10)
-                    ifconfig_list = str(ifconfig_out).split('\n\n')
-                    ifaces = []
 
-                    for item in ifconfig_list:
-                        lines = item.split('\n')
-                        name = lines[0].split(' ')[0]
-                        if name.find('veth') == -1 and name != 'lo' and name.find('br') == -1 and name.find('docker') == -1 and len(name) > 0:
-                            ifaces.append({'iface': name})
-
-                    eta = ([(x['iface']) for x in ifaces])
-                    eta2 = str(', '.join(eta))
-                    eta3 = str(eta2)
-                    #eta4 = subprocess.Popen("ip addr show tun0", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                except:
-                    eta3 = 'Null'
+                eta3 = 'Null'
 
                 net_stat = json.dumps({"networkingStandards": eta3})
          except:
@@ -121,7 +100,6 @@ def static_info():
 
 
          return net_stat
-
 
 
     def hwloccpuinfo():
@@ -170,8 +148,12 @@ def static_info():
 
     merged_dict_stat = {**A, **B, **C}
     jsonString_merged_static = json.dumps(merged_dict_stat)
-    #print(jsonString_merged_static)
+
 
     return jsonString_merged_static
 
 #static_info()
+
+
+
+
