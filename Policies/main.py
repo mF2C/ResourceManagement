@@ -14,6 +14,7 @@
 
 from common.logs import LOG
 from common.common import CPARAMS, URLS
+from common.CIMI import CIMIcalls as CIMI
 from logging import DEBUG, INFO
 
 from leaderprotection.arearesilience import AreaResilience
@@ -30,7 +31,7 @@ import subprocess
 __status__ = 'Production'
 __maintainer__ = 'Alejandro Jurnet'
 __email__ = 'ajurnet@ac.upc.edu'
-__version__ = '2.0.6'
+__version__ = '2.0.7'
 __author__ = 'Universitat Politècnica de Catalunya'
 
 # ### Global Variables ### #
@@ -63,7 +64,8 @@ reelection_model = api.model('Reelection_msg', {
 })
 
 keepalive_model = api.model('Keepalive Message', {
-    'deviceID': fields.String(required=True, description='The deviceID of the device that is sending the message.')
+    'deviceID': fields.String(required=True, description='The deviceID of the device that is sending the message.'),
+    'deviceIP': fields.String(required=False, description='The IP of the device that is dettected by the Leader Discovery module.')
 })
 
 keepalive_reply_model = api.model('Keepalive Reply Message', {
@@ -161,8 +163,7 @@ class startAR(Resource):
     @pl.response(403, 'Already Started')
     def get(self):
         """Start Agent Resilience"""
-        started = arearesilience.start(agentstart.deviceID)
-        # started = arearesilience.start(CPARAMS.DEVICEID_FLAG)
+        started = arearesilience.start(agentstart.deviceID, agentstart.deviceIP)
         if started:
             return {'started': started}, 200
         else:
@@ -307,8 +308,9 @@ class keepalive(Resource):
             # It's not like I don't want you to send me messages or anything, b-baka!
             return {'deviceID': agentstart.deviceID, 'backupPriority': arearesilience.PRIORITY_ON_FAILURE}, 405
 
-        correct, priority = arearesilience.receive_keepalive(api.payload['deviceID'])
-        LOG.debug('Device {} has sent a keepalive. Result correct: {}, Priority: {}'.format(api.payload['deviceID'],correct,priority))
+        deviceIP = '' if 'deviceIP' not in api.payload else api.payload['deviceIP']
+        correct, priority = arearesilience.receive_keepalive(api.payload['deviceID'], deviceIP)
+        LOG.debug('Device {} has sent a keepalive. Result correct: {}, Priority: {}, deviceIP: {}'.format(api.payload['deviceID'],correct,priority,deviceIP))
         if correct:
             # Authorized
             return {'deviceID': agentstart.deviceID, 'backupPriority': priority}, 200
@@ -332,14 +334,26 @@ class leaderInfo(Resource):     # TODO: Provisional, remove when possible
 
 
 # And da Main Program
-def cimi(key, default=None):    # TODO: Remove this (only for code redessign)
+def cimi(key, default=None):
     value = default
     if key == 'leader':
         value = CPARAMS.LEADER_FLAG
     elif key == 'topology':
         value = []
+        # 1. Try to get the real topology
+        cimi_topology = CIMI.get_topology()
+        if len(cimi_topology) > 0:
+            used_topology = cimi_topology
+            # used_topology = list()
+            # for item in cimi_topology:        # TODO: Dataclay doesnt sync device static information to the leader
+            #     qdeviceID = CIMI.get_deviceID_from_IP(item[1])
+            #     if qdeviceID != '':
+            #         used_topology.append((qdeviceID, item[1]))
+        else:
+            used_topology = CPARAMS.TOPOLOGY_FLAG
+
         try:
-            for item in CPARAMS.TOPOLOGY_FLAG:
+            for item in used_topology:
                 i = {
                     'deviceID': item[0],
                     'deviceIP': item[1]
@@ -398,7 +412,7 @@ def initialization():
 
 
 def main():
-    LOG.info('API documentation page at: http://{}:{}/'.format('localhost', 46050))
+    LOG.info('API documentation page at: http://{}:{}/'.format('localhost', CPARAMS.POLICIES_PORT))
     app.run(debug=False, host='0.0.0.0', port=CPARAMS.POLICIES_PORT)
 
 
