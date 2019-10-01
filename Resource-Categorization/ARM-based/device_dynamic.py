@@ -118,6 +118,7 @@ def dynamic_info():
     ### Network information collection
     def net_dyna_info():
         global ethernet_throughput_info, wifi_throughput_info, ethe_address_NIC, wifi_address_NIC
+        ddisIP =''
         try:
             client = docker.from_env()
             running_containers = client.containers.list(filters={"status": "running"})
@@ -238,11 +239,12 @@ def dynamic_info():
                 try:
                     timeout = time.time() + 60 * 2
                     while True:
+                        ddisIP = ''
                         response_vpn = requests.get("http://localhost:1999/api/get_vpn_ip", verify=False)
                         res_vpn = response_vpn.json()
                         devvpnIP = res_vpn['ip']
                         ddisIP = str(devvpnIP)
-                        if ddisIP !="" or time.time()>timeout:
+                        if ddisIP !='' or time.time()>timeout:
                             break
                     OS = platform.system()
 

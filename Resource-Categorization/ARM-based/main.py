@@ -222,6 +222,7 @@ class Main():
 
     def agentresource(self):
         global agresid, end_url_point, wifi_address_NIC, ethe_address_NIC, devIP, devips
+        devip=''
         while self.deviceID_cimiresource is None:
             t.sleep(0.1)
         deviceID = self.userID
@@ -435,6 +436,7 @@ class Main():
     def agentresourceLeader(self):
         global agresid, end_url_point, wifi_address_NIC, ethe_address_NIC
         childip = []
+        devip =''
         while self.deviceID_cimiresource is None:
             t.sleep(0.1)
         deviceID = self.userID

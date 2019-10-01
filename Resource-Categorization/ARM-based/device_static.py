@@ -64,7 +64,7 @@ def static_info():
 
     def net_stat_info():
          global ethe_address_NIC, wifi_address_NIC
-
+         ddisIP =''
 
          try:
             client = docker.from_env()
@@ -96,6 +96,7 @@ def static_info():
                 try:
                     timeout = time.time() + 60 * 2
                     while True:
+                        ddisIP =''
                         response_vpn = requests.get("http://localhost:1999/api/get_vpn_ip", verify=False)
                         res_vpn = response_vpn.json()
                         devvpnIP = res_vpn['ip']
