@@ -72,8 +72,11 @@ def static_info():
             running_discovery_containers = []
             for container in running_containers:
                 container_im = container.attrs['Config']['Image']
-                if "discovery" in container_im:
-                    running_discovery_containers.append(container)
+                try:
+                    if "discovery" in container_im:
+                        running_discovery_containers.append(container)
+                except:
+                    running_discovery_containers = []
 
             if len(running_discovery_containers) == 1:
                 disc_cont_id = running_discovery_containers[0]
@@ -90,10 +93,15 @@ def static_info():
                 net_stat = json.dumps({"networkingStandards": 'WiFi'})
 
             else:
-
-                eta3 = 'Null'
-
-                net_stat = json.dumps({"networkingStandards": eta3})
+                try:
+                    response_vpn = requests.get("http://localhost:1999/api/get_vpn_ip", verify=False)
+                    res_vpn = response_vpn.json()
+                    devvpnIP = res_vpn['ip']
+                    ddisIP = str(devvpnIP)
+                    net_stat = json.dumps({"networkingStandards": "Ethernet"})
+                except:
+                    eta3 = 'Null'
+                    net_stat = json.dumps({"networkingStandards": eta3})
          except:
              eta3 = 'Null'
              net_stat = json.dumps({"networkingStandards": eta3})

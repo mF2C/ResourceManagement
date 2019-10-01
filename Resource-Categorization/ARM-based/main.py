@@ -243,8 +243,11 @@ class Main():
                 running_discovery_containers = []
                 for container in running_containers:
                     container_im = container.attrs['Config']['Image']
-                    if "discovery" in container_im:
-                        running_discovery_containers.append(container)
+                    try:
+                        if "discovery" in container_im:
+                            running_discovery_containers.append(container)
+                    except:
+                        running_discovery_containers=[]
 
                 if len(running_discovery_containers) == 1:
                     disc_cont_id = running_discovery_containers[0]
@@ -258,7 +261,19 @@ class Main():
                             devip = "None"
                     except:
                         devip = "None"
+                    agentResource1_info = {"device_id": MyleaderID, "device_ip": devip, "leader_id": dID, "leader_ip": leddevip,"authenticated": authenticated, "connected": connect, "isLeader": isleader,"backup_ip": backupip, "childrenIPs": childip}
+                    agentResource_info = {"device_id": deviceID, "device_ip": devip}
+                    agentRes1_info = json.dumps(agentResource1_info)
+                    agentRes_info = json.dumps(agentResource_info)
 
+                else:
+                    try:
+                        response_vpn = requests.get("http://localhost:1999/api/get_vpn_ip", verify=False)
+                        res_vpn = response_vpn.json()
+                        devvpnIP = res_vpn['ip']
+                        devip = str(devvpnIP)
+                    except:
+                        devip = "None"
 
                     agentResource1_info = {"device_id": MyleaderID, "device_ip": devip, "leader_id": dID, "leader_ip": leddevip,"authenticated": authenticated, "connected": connect, "isLeader": isleader,"backup_ip": backupip, "childrenIPs": childip}
                     agentResource_info = {"device_id": deviceID, "device_ip": devip}
@@ -433,8 +448,11 @@ class Main():
                 running_discovery_containers = []
                 for container in running_containers:
                     container_im = container.attrs['Config']['Image']
-                    if "discovery" in container_im:
-                        running_discovery_containers.append(container)
+                    try:
+                        if "discovery" in container_im:
+                            running_discovery_containers.append(container)
+                    except:
+                        running_discovery_containers = []
 
                 if len(running_discovery_containers) == 1:
                     disc_cont_id = running_discovery_containers[0]
@@ -466,6 +484,34 @@ class Main():
                     agentResource_info = {"device_id": dID, "device_ip": devip, "leader_id": MyleaderID, "backup_ip": backupip, "childrenIPs": childip}
                     agentRes_info = json.dumps(agentResource_info)
                     agentRes1_info = json.dumps(agentResource1_info)
+
+                else:
+                    try:
+                        response_vpn = requests.get("http://localhost:1999/api/get_vpn_ip", verify=False)
+                        res_vpn = response_vpn.json()
+                        devvpnIP = res_vpn['ip']
+                        devip = str(devvpnIP)
+                    except:
+                        devip = "None"
+
+                    r22 = requests.get("{}/api/device-dynamic".format(self.cimi_endpoint),headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
+                    dynamics_info = r22.json()
+                    rs_info = dynamics_info['deviceDynamics']
+                    ips1 = [item['wifiAddress'] for item in rs_info]
+
+                    childip = [y for y in ips1 if y!= None and y!= "192.168.7.1"]
+
+                    backupip = ""
+                    authenticated = True
+                    connect = True
+                    isleader = True
+
+
+                    agentResource1_info = {"device_id": dID, "device_ip": devip, "leader_id": dID, "leader_ip": devip, "authenticated": authenticated, "connected": connect, "isLeader": isleader, "backup_ip": backupip, "childrenIPs": childip}
+                    agentResource_info = {"device_id": dID, "device_ip": devip, "leader_id": MyleaderID, "backup_ip": backupip, "childrenIPs": childip}
+                    agentRes_info = json.dumps(agentResource_info)
+                    agentRes1_info = json.dumps(agentResource1_info)
+
 
                     if agentResource_info['device_ip'] is "Null" and agentResource1_info['device_ip'] is "Null":
                         print("Device IP is not retrieve yet!!!")
@@ -500,8 +546,6 @@ class Main():
 
                         except ConnectionError as e:
                             print("Agent resource is not yet created!!! Wait for few times")
-                else:
-                    print("Device IP is not retrieved yet!!!")
             except:
                 print("Leader's Device IP is not retrieved yet!!!")
 
