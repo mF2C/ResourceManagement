@@ -122,6 +122,7 @@ class Main():
             r = requests.post("{}/api/device".format(self.cimi_endpoint), headers={"slipstream-authn-info": "internal ADMIN"}, json=jsonString_merged_static, verify=False)
             print("Posting device resource info for micro-agent: ", r, r.request, r.reason, r.json())
 
+
             #capturing the corresponding cimi resource-id
             self.deviceID_cimiresource = r.json()['resource-id']
             r1 = requests.get("{}/api/device".format(self.cimi_endpoint), headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
@@ -498,6 +499,7 @@ class Main():
                             break
 
                     r22 = requests.get("{}/api/device-dynamic".format(self.cimi_endpoint),headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
+
                     dynamics_info = r22.json()
                     rs_info = dynamics_info['deviceDynamics']
                     ips1 = [item['wifiAddress'] for item in rs_info]
