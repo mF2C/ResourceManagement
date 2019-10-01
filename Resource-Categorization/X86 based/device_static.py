@@ -1,4 +1,5 @@
 import time
+
 import psutil
 import platform
 import json
@@ -19,18 +20,14 @@ class my_dict(dict):
 def static_info():
 
     def hwsw_info():
+
         os_info = platform.platform()
-
         system_arch = platform.machine()
-
         a = cpuinfo.get_cpu_info()
         cpu_owner_info = a['brand']
         cpu_clock_speed = a['hz_advertised']
-
         physical_cpu = psutil.cpu_count(logical=False)
-
         logical_cpu = psutil.cpu_count()
-
         mem = psutil.virtual_memory()
         RAM = mem[0]
         total_ram_size = ((RAM / 1024) / 1024)
@@ -56,7 +53,7 @@ def static_info():
         elif agent_type == '3':
             at = 'Micro Agent'
         else:
-            at = 'Something is wrong'
+            at = 'empty'
 
 
         hwsw_stat = json.dumps({'os': os_info, 'arch':system_arch, 'cpuManufacturer': cpu_owner_info, 'physicalCores': physical_cpu,
@@ -68,6 +65,7 @@ def static_info():
 
     def net_stat_info():
          global ethe_address_NIC, wifi_address_NIC
+         ddisIP =''
 
          try:
             result = subprocess.run(['/bin/ip', 'route'], stdout=subprocess.PIPE)
@@ -85,34 +83,41 @@ def static_info():
                 starturl = "http://"
                 endurl = ":46040/api/v1/resource-management/discovery/my_ip/"
                 finalurl = str(starturl + ddevIP + endurl)
-                response_discovery = requests.get(finalurl, verify=False)
-                res_dis = response_discovery.json()
-                devdisIP = res_dis['IP_address']
+                try:
+                    response_discovery = requests.get(finalurl, verify=False)
+                    res_dis = response_discovery.json()
+                    devdisIP = res_dis['IP_address']
+                except:
+                    devdisIP = ""
                 ddisIP = str(devdisIP)
+                net_stat = json.dumps({"networkingStandards": 'WiFi'})
 
-                if ddisIP != '':
-                     net_stat = json.dumps({"networkingStandards": 'WiFi'})
-                     return net_stat
-
-                else:
-                    try:
-                        starturl1 = "http://"
-                        endurl1 = "/api/get_vpn_ip"
-                        finalurl1 = str(starturl1 + ddevIP + endurl1)
+            else:
+                try:
+                    ddevIP1 = str(server_ip)
+                    starturl1 = "http://"
+                    endurl1 = ":1999/api/get_vpn_ip"
+                    finalurl1 = str(starturl1 + ddevIP1 + endurl1)
+                    timeout = time.time() + 60 * 2
+                    while True:
+                        ddisIP=''
                         response_vpnclient = requests.get(finalurl1, verify=False)
                         res_vpn = response_vpnclient.json()
                         devvpnIP = res_vpn['ip']
                         ddisIP = str(devvpnIP)
-                        eta3 = "WiFi"
-                    except:
-                        eta3 = 'Null'
+                        if ddisIP!='' or time.time()>timeout:
+                            break
+                    eta3 = 'Ethernet'
+                except:
+                    eta3 = 'Null'
 
-                    net_stat = json.dumps({"networkingStandards": eta3})
-                    return net_stat
-         except:
-                eta3 = 'Null'
                 net_stat = json.dumps({"networkingStandards": eta3})
-                return net_stat
+         except:
+             eta3 = 'Null'
+             net_stat = json.dumps({"networkingStandards": eta3})
+
+
+         return net_stat
 
 
     def hwloccpuinfo():
@@ -161,7 +166,7 @@ def static_info():
 
     merged_dict_stat = {**A, **B, **C}
     jsonString_merged_static = json.dumps(merged_dict_stat)
-    #print(jsonString_merged_static)
+
 
     return jsonString_merged_static
 
