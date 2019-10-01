@@ -94,10 +94,14 @@ def static_info():
 
             else:
                 try:
-                    response_vpn = requests.get("http://localhost:1999/api/get_vpn_ip", verify=False)
-                    res_vpn = response_vpn.json()
-                    devvpnIP = res_vpn['ip']
-                    ddisIP = str(devvpnIP)
+                    timeout = time.time() + 60 * 2
+                    while True:
+                        response_vpn = requests.get("http://localhost:1999/api/get_vpn_ip", verify=False)
+                        res_vpn = response_vpn.json()
+                        devvpnIP = res_vpn['ip']
+                        ddisIP = str(devvpnIP)
+                        if ddisIP !="" or time.time()>timeout:
+                            break
                     net_stat = json.dumps({"networkingStandards": "Ethernet"})
                 except:
                     eta3 = 'Null'

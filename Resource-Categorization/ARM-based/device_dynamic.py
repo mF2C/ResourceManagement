@@ -6,14 +6,16 @@ import json
 from os import getenv
 import docker
 import requests
-#from requests.adapters import HTTPAdapter
-#from urllib3.util import Retry
+# import logging
+# from requests.adapters import HTTPAdapter
+# from urllib3.util import Retry
 docker_client = docker.from_env()
 
 
 class my_dict(dict):
     def __missing__(self, key):
         return 'Empty'
+
 
 def dynamic_info():
     def hwsw_dyna_info():
@@ -112,7 +114,8 @@ def dynamic_info():
 
         return hwsw_dyna
 
-### Network information collection
+
+    ### Network information collection
     def net_dyna_info():
         global ethernet_throughput_info, wifi_throughput_info, ethe_address_NIC, wifi_address_NIC
         try:
@@ -233,10 +236,14 @@ def dynamic_info():
 
             else:
                 try:
-                    response_vpn = requests.get("http://localhost:1999/api/get_vpn_ip", verify=False)
-                    res_vpn = response_vpn.json()
-                    devvpnIP = res_vpn['ip']
-                    ddisIP = str(devvpnIP)
+                    timeout = time.time() + 60 * 2
+                    while True:
+                        response_vpn = requests.get("http://localhost:1999/api/get_vpn_ip", verify=False)
+                        res_vpn = response_vpn.json()
+                        devvpnIP = res_vpn['ip']
+                        ddisIP = str(devvpnIP)
+                        if ddisIP !="" or time.time()>timeout:
+                            break
                     OS = platform.system()
 
                     if OS == 'Linux':

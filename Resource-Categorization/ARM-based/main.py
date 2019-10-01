@@ -267,14 +267,14 @@ class Main():
                     agentRes_info = json.dumps(agentResource_info)
 
                 else:
-                    try:
+                    timeout = t.time() + 60 * 2
+                    while True:
                         response_vpn = requests.get("http://localhost:1999/api/get_vpn_ip", verify=False)
                         res_vpn = response_vpn.json()
                         devvpnIP = res_vpn['ip']
                         devip = str(devvpnIP)
-                    except:
-                        devip = "None"
-
+                        if devip != '' or t.time() > timeout:
+                            break
                     agentResource1_info = {"device_id": MyleaderID, "device_ip": devip, "leader_id": dID, "leader_ip": leddevip,"authenticated": authenticated, "connected": connect, "isLeader": isleader,"backup_ip": backupip, "childrenIPs": childip}
                     agentResource_info = {"device_id": deviceID, "device_ip": devip}
                     agentRes1_info = json.dumps(agentResource1_info)
@@ -486,13 +486,14 @@ class Main():
                     agentRes1_info = json.dumps(agentResource1_info)
 
                 else:
-                    try:
+                    timeout = t.time() + 60 * 2
+                    while True:
                         response_vpn = requests.get("http://localhost:1999/api/get_vpn_ip", verify=False)
                         res_vpn = response_vpn.json()
                         devvpnIP = res_vpn['ip']
                         devip = str(devvpnIP)
-                    except:
-                        devip = "None"
+                        if devip != '' or t.time() > timeout:
+                            break
 
                     r22 = requests.get("{}/api/device-dynamic".format(self.cimi_endpoint),headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
                     dynamics_info = r22.json()
