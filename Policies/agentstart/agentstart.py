@@ -335,7 +335,7 @@ class AgentStart:
                 self.discovery_leader_failed = not r
             except Exception as ex:
                 LOG.exception(self.TAG + 'Discovery broadcast trigger failed!')
-                self.detectedLeaderID = ''
+                self.detectedLeaderID = self.deviceID
             LOG.info(self.TAG + 'Discovery Broadcast Trigger Done.')
         else:
             return
@@ -344,7 +344,7 @@ class AgentStart:
             return
         self.discovery_failed = self.discovery_leader_failed
 
-        # 2. Start CAU-client # TODO: add trigger to CAU-client
+        # 2. Start CAU-client
         if self._connected:
             self.cauclient_failed = True
             LOG.debug(self.TAG + 'Sending trigger to CAU client...')
@@ -406,7 +406,7 @@ class AgentStart:
             return
 
         # Create/Modify Agent Resource
-        self.deviceIP = CPARAMS.LEADER_DISCOVERY_IP if CPARAMS.DEVICE_IP_FLAG is None else CPARAMS.DEVICE_IP_FLAG
+        self.deviceIP = CPARAMS.LEADER_DISCOVERY_IP if CPARAMS.DEVICE_IP_FLAG is None and not self.discovery_leader_failed else CPARAMS.DEVICE_IP_FLAG
         self._cimi_agent_resource = AgentResource(self.deviceID, self.deviceIP, True,
                                                   True, self.imLeader)
         # deprecated: real values of Auth and Conn (as now are None in the Leader)

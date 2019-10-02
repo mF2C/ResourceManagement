@@ -220,7 +220,7 @@ class role_change(Resource):
                 LOG.debug('Role change: Agent -> Backup')
                 leaderIP = request.environ.get('HTTP_X_REAL_IP', request.remote_addr)
                 LOG.debug('Leader at {} is selecting me as Backup'.format(leaderIP))
-                ret = arearesilience.promotedToBackup(leaderIP=leaderIP)    # TODO: get leaderIP from CIMI
+                ret = arearesilience.promotedToBackup(leaderIP=agentstart.leaderIP)    # TODO: get leaderIP from CIMI
                 if ret:
                     LOG.info('Successful promotion to Backup')
                     return {'imLeader': imLeader, 'imBackup': True}, 200
