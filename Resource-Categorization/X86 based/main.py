@@ -64,6 +64,10 @@ class Main():
         self.thread_module.start()
 
 
+    def run(self):
+        print("Res-Cat is Running on 406070")
+
+
 ##Threading Module is starting##
 
     def th_module(self):
@@ -166,7 +170,6 @@ class Main():
         while self._running:
             t.sleep(0.1)
             dyna = dynamic_info()
-            #print("dyna: ", dyna)
             dynamicinfo = json.loads(dyna)
             wifi_ip = dynamicinfo['wifiAddress']
             if wifi_ip=="Null":
@@ -282,34 +285,18 @@ class Main():
                         timeout = t.time() + 60 * 2
                         while True:
                             devip = ''
-                            with open('/var/lib/docker/volumes/mf2c_vpninfo/_data/vpnclient.status', 'r',
-                                      encoding='utf-8') as json_file:
-                                try:
+                            try:
+                                with open('/var/lib/docker/volumes/mf2c_vpninfo/_data/vpnclient.status', 'r',
+                                          encoding='utf-8') as json_file:
                                     data = json.load(json_file)
                                     print("Network info retrieve from VPN-Client: ", data)
                                     devvpnIP = data['ip']
                                     devip = str(devvpnIP)
-                                except Exception as e:
-                                    print(e)
-                                    print("VPN Client container is not ready yet!!!")
-                                if devip != '' or t.time() > timeout:
-                                    break
-                        # ddevIP1 = str(server_ip)
-                        # starturl1 = "http://"
-                        # endurl1 = ":1999/api/get_vpn_ip"
-                        # finalurl1 = str(starturl1 + ddevIP1 + endurl1)
-                        # timeout = t.time() + 60 * 2
-                        # while True:
-                        #     devip = ''
-                        #     try:
-                        #         response_vpn = requests.get(finalurl1, verify=False)
-                        #         res_vpn = response_vpn.json()
-                        #         devvpnIP = res_vpn['ip']
-                        #         devip = str(devvpnIP)
-                        #     except:
-                        #         print("VPN Client container is not ready yet!!!")
-                        #     if devip != '' or t.time() > timeout:
-                        #         break
+                            except Exception as e:
+                                print(e)
+                                print("VPN Client container is not ready yet!!!")
+                            if devip != '' or t.time() > timeout:
+                                break
 
                         agentResource1_info = {"device_id": MyleaderID, "device_ip": devip, "leader_id": dID,
                                                "leader_ip": leddevip, "authenticated": authenticated,
@@ -341,6 +328,8 @@ class Main():
                         if self.agentresourceid is "agent":
                             print("Agent resource is not yet created!!! Wait for few times")
                         else:
+                            print("Updating information of agent resource in normal-agent (before posting): ",
+                                  agentRes_info)
                             r6 = requests.put(end_url_point, headers={"slipstream-authn-info": "internal ADMIN"},
                                               json=agentResource_info, verify=False)
                             print("Updating agent resource info: ", r6, r6.request, r6.reason, r6.json())
@@ -520,34 +509,18 @@ class Main():
                         timeout = t.time() + 60 * 2
                         while True:
                             devip = ''
-                            with open('/var/lib/docker/volumes/mf2c_vpninfo/_data/vpnclient.status', 'r',
-                                      encoding='utf-8') as json_file:
-                                try:
+                            try:
+                                with open('/var/lib/docker/volumes/mf2c_vpninfo/_data/vpnclient.status', 'r',
+                                          encoding='utf-8') as json_file:
                                     data = json.load(json_file)
                                     print("Network info retrieve from VPN-Client: ", data)
                                     devvpnIP = data['ip']
                                     devip = str(devvpnIP)
-                                except Exception as e:
-                                    print(e)
-                                    print("VPN Client container is not ready yet!!!")
-                                if devip != '' or t.time() > timeout:
-                                    break
-                        # ddevIP1 = str(server_ip)
-                        # starturl1 = "http://"
-                        # endurl1 = ":1999/api/get_vpn_ip"
-                        # finalurl1 = str(starturl1 + ddevIP1 + endurl1)
-                        # timeout = t.time() + 60 * 2
-                        # while True:
-                        #     devip = ''
-                        #     try:
-                        #         response_vpn = requests.get(finalurl1, verify=False)
-                        #         res_vpn = response_vpn.json()
-                        #         devvpnIP = res_vpn['ip']
-                        #         devip = str(devvpnIP)
-                        #     except:
-                        #         print("VPN Client container is not ready yet!!!")
-                        #     if devip != '' or t.time() > timeout:
-                        #         break
+                            except Exception as e:
+                                print(e)
+                                print("VPN Client container is not ready yet!!!")
+                            if devip != '' or t.time() > timeout:
+                                break
 
                 r22 = requests.get("http://cimi:8201/api/device-dynamic",headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
                 dynamics_info = r22.json()
@@ -669,11 +642,6 @@ class Main():
 
                     else:
                         pass
-
-                # res_dd_info = requests.get("http://cimi:8201/api/device-dynamic",headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
-                # modified_dd_info = res_dd_info.json()
-                # rsmd_info1 = modified_dd_info['deviceDynamics']
-                # mdrs_info = rsmd_info1
 
 
                 mdrs_info = rsmd_info
@@ -857,11 +825,14 @@ main = Main()
 #Starting point of the resource-categorization module
 @app.route('/api/v1/resource-management/categorization/start', methods=['GET', 'POST'], strict_slashes=False)
 def start():
-    global example, isStarted
+    global example, isStarted, getje, userid
     if isStarted:
         return jsonify({'error':True})
-    getje = request.get_json()
-    userid = request.json['deviceID']
+    try:
+        getje = request.get_json()
+        userid = request.json['deviceID']
+    except Exception as e:
+        print(e)
     if 'detectedLeaderID' not in getje:
         leaderid = 'Not attached with any Leader Agent'
     else:
@@ -891,6 +862,13 @@ def switch():
     main.switch(userid, switch_flag, isleader)
     # isStarted = True
     return jsonify({'started': True})
+
+
+@app.route('/api/v1/resource-management/categorization/run', methods=['GET', 'POST'], strict_slashes=False)
+def run():
+    main.run()
+    return jsonify({'running': True})
+
 
 
 

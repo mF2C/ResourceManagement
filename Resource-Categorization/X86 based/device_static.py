@@ -95,39 +95,19 @@ def static_info():
                 timeout = time.time() + 60 * 2
                 while True:
                     ddisIP = ''
-                    with open('/var/lib/docker/volumes/mf2c_vpninfo/_data/vpnclient.status', 'r',
+                    try:
+                        with open('/var/lib/docker/volumes/mf2c_vpninfo/_data/vpnclient.status', 'r',
                               encoding='utf-8') as json_file:
-                        try:
                             data = json.load(json_file)
                             print("Network info retrieve from VPN-Client: ", data)
                             devvpnIP = data['ip']
                             ddisIP = str(devvpnIP)
-                        except Exception as e:
+                    except Exception as e:
                             print(e)
                             print("VPN Client container is not ready yet!!!")
-                        if ddisIP != '' or time.time() > timeout:
-                            break
+                    if ddisIP != '' or time.time() > timeout:
+                        break
                 eta3 = 'Ethernet'
-                # try:
-                #     ddevIP1 = str(server_ip)
-                #     starturl1 = "http://"
-                #     endurl1 = ":1999/api/get_vpn_ip"
-                #     finalurl1 = str(starturl1 + ddevIP1 + endurl1)
-                #     timeout = time.time() + 60 * 2
-                #     while True:
-                #         ddisIP=''
-                #         try:
-                #             response_vpnclient = requests.get(finalurl1, verify=False)
-                #             res_vpn = response_vpnclient.json()
-                #             devvpnIP = res_vpn['ip']
-                #             ddisIP = str(devvpnIP)
-                #         except:
-                #             print("VPN Client container is not ready yet!!!")
-                #         if ddisIP!='' or time.time()>timeout:
-                #             break
-                #     eta3 = 'Ethernet'
-                # except:
-                #     eta3 = 'Null'
 
                 net_stat = json.dumps({"networkingStandards": eta3})
          except:
