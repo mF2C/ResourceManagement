@@ -96,10 +96,10 @@ def static_info():
                 while True:
                     ddisIP = ''
                     try:
-                        with open('/var/lib/docker/volumes/mf2c_vpninfo/_data/vpnclient.status', 'r',
+                        with open('/vpninfo/vpnclient.status', 'r',
                               encoding='utf-8') as json_file:
                             data = json.load(json_file)
-                            print("Network info retrieve from VPN-Client: ", data)
+                            #print("Network info retrieve from VPN-Client: ", data)
                             devvpnIP = data['ip']
                             ddisIP = str(devvpnIP)
                     except Exception as e:

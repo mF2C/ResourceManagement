@@ -264,47 +264,62 @@ class Main():
                     #print("deviceIP", devip)
 
                 else:
-                    try:
-                        response_agent = requests.get("http://cimi:8201/api/agent",
-                                                  headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
-                        response_agent_json = response_agent.json()
-                        devIp = response_agent_json['device_ip']
-                        devagentIP = str(devIp)
-                    except:
-                        devagentIP=""
-                    if devagentIP is not None and devagentIP != '':
-                        devip = devagentIP
-                        agentResource1_info = {"device_id": MyleaderID, "device_ip": devip, "leader_id": dID,
-                                               "leader_ip": leddevip, "authenticated": authenticated,
-                                               "connected": connect, "isLeader": isleader, "backup_ip": backupip,
-                                               "childrenIPs": childip}
-                        agentResource_info = {"device_id": deviceID, "device_ip": devip}
-                        agentRes1_info = json.dumps(agentResource1_info)
-                        agentRes_info = json.dumps(agentResource_info)
-                    else:
-                        timeout = t.time() + 60 * 2
-                        while True:
-                            devip = ''
-                            try:
-                                with open('/vpninfo/vpnclient.status', 'r',
-                                          encoding='utf-8') as json_file:
-                                    data = json.load(json_file)
-                                    print("Network info retrieve from VPN-Client: ", data)
-                                    devvpnIP = data['ip']
-                                    devip = str(devvpnIP)
-                            except Exception as e:
-                                print(e)
-                                print("VPN Client container is not ready yet!!!")
-                            if devip != '' or t.time() > timeout:
-                                break
+                    timeout = t.time() + 60 * 2
+                    while True:
+                        devip = ''
+                        try:
+                            with open('/vpninfo/vpnclient.status', 'r',
+                                      encoding='utf-8') as json_file:
+                                data = json.load(json_file)
+                                # print("Network info retrieve from VPN-Client: ", data)
+                                devvpnIP = data['ip']
+                                devip = str(devvpnIP)
+                        except Exception as e:
+                            print(e)
+                            print("VPN Client container is not ready yet!!!")
+                        if devip != '' or t.time() > timeout:
+                            break
+                    # try:
+                    #     response_agent = requests.get("http://cimi:8201/api/agent",
+                    #                               headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
+                    #     response_agent_json = response_agent.json()
+                    #     devIp = response_agent_json['device_ip']
+                    #     devagentIP = str(devIp)
+                    # except:
+                    #     devagentIP=""
+                    # if devagentIP is not None and devagentIP != '':
+                    #     devip = devagentIP
+                    #     agentResource1_info = {"device_id": MyleaderID, "device_ip": devip, "leader_id": dID,
+                    #                            "leader_ip": leddevip, "authenticated": authenticated,
+                    #                            "connected": connect, "isLeader": isleader, "backup_ip": backupip,
+                    #                            "childrenIPs": childip}
+                    #     agentResource_info = {"device_id": deviceID, "device_ip": devip}
+                    #     agentRes1_info = json.dumps(agentResource1_info)
+                    #     agentRes_info = json.dumps(agentResource_info)
+                    # else:
+                    #     timeout = t.time() + 60 * 2
+                    #     while True:
+                    #         devip = ''
+                    #         try:
+                    #             with open('/vpninfo/vpnclient.status', 'r',
+                    #                       encoding='utf-8') as json_file:
+                    #                 data = json.load(json_file)
+                    #                 #print("Network info retrieve from VPN-Client: ", data)
+                    #                 devvpnIP = data['ip']
+                    #                 devip = str(devvpnIP)
+                    #         except Exception as e:
+                    #             print(e)
+                    #             print("VPN Client container is not ready yet!!!")
+                    #         if devip != '' or t.time() > timeout:
+                    #             break
 
-                        agentResource1_info = {"device_id": MyleaderID, "device_ip": devip, "leader_id": dID,
+                    agentResource1_info = {"device_id": MyleaderID, "device_ip": devip, "leader_id": dID,
                                                "leader_ip": leddevip, "authenticated": authenticated,
                                                "connected": connect, "isLeader": isleader, "backup_ip": backupip,
                                                "childrenIPs": childip}
-                        agentResource_info = {"device_id": deviceID, "device_ip": devip}
-                        agentRes1_info = json.dumps(agentResource1_info)
-                        agentRes_info = json.dumps(agentResource_info)
+                    agentResource_info = {"device_id": deviceID, "device_ip": devip}
+                    agentRes1_info = json.dumps(agentResource1_info)
+                    agentRes_info = json.dumps(agentResource_info)
 
                 if agentResource_info['device_ip'] is "Null" and agentResource1_info['device_ip'] is "Null":
                     print("Device IP is not retrieve yet!!!")
@@ -495,32 +510,48 @@ class Main():
                 if ddevip != '':
                     devip = ddevip
                 else:
-                    try:
-                        response_agent = requests.get("http://cimi:8201/api/agent",
-                                                  headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
-                        response_agent_json = response_agent.json()
-                        devIp = response_agent_json['device_ip']
-                        devagentIP = str(devIp)
-                    except:
-                        devagentIP=""
-                    if devagentIP is not None and devagentIP != '':
-                        devip = devagentIP
-                    else:
-                        timeout = t.time() + 60 * 2
-                        while True:
-                            devip = ''
-                            try:
-                                with open('/vpninfo/vpnclient.status', 'r',
-                                          encoding='utf-8') as json_file:
-                                    data = json.load(json_file)
-                                    print("Network info retrieve from VPN-Client: ", data)
-                                    devvpnIP = data['ip']
-                                    devip = str(devvpnIP)
-                            except Exception as e:
-                                print(e)
-                                print("VPN Client container is not ready yet!!!")
-                            if devip != '' or t.time() > timeout:
-                                break
+                    timeout = t.time() + 60 * 2
+                    while True:
+                        devip = ''
+                        try:
+                            with open('/vpninfo/vpnclient.status', 'r',
+                                      encoding='utf-8') as json_file:
+                                data = json.load(json_file)
+                                # print("Network info retrieve from VPN-Client: ", data)
+                                devvpnIP = data['ip']
+                                devip = str(devvpnIP)
+                        except Exception as e:
+                            print(e)
+                            print("VPN Client container is not ready yet!!!")
+                        if devip != '' or t.time() > timeout:
+                            break
+
+                    # try:
+                    #     response_agent = requests.get("http://cimi:8201/api/agent",
+                    #                               headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
+                    #     response_agent_json = response_agent.json()
+                    #     devIp = response_agent_json['device_ip']
+                    #     devagentIP = str(devIp)
+                    # except:
+                    #     devagentIP=""
+                    # if devagentIP is not None and devagentIP != '':
+                    #     devip = devagentIP
+                    # else:
+                    #     timeout = t.time() + 60 * 2
+                    #     while True:
+                    #         devip = ''
+                    #         try:
+                    #             with open('/vpninfo/vpnclient.status', 'r',
+                    #                       encoding='utf-8') as json_file:
+                    #                 data = json.load(json_file)
+                    #                 print("Network info retrieve from VPN-Client: ", data)
+                    #                 devvpnIP = data['ip']
+                    #                 devip = str(devvpnIP)
+                    #         except Exception as e:
+                    #             print(e)
+                    #             print("VPN Client container is not ready yet!!!")
+                    #         if devip != '' or t.time() > timeout:
+                    #             break
 
                 r22 = requests.get("http://cimi:8201/api/device-dynamic",headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
                 dynamics_info = r22.json()
