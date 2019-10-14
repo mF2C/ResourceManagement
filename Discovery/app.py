@@ -47,24 +47,27 @@ def start_broadcast():
 
 @app.route('/api/v1/resource-management/discovery/broadcast/', methods=['PUT'])
 def stop_broadcast():
-    is_inactive = Broadcaster.check_inactive()
-    #if the broadcaster is already inactive, check not to stop it twice
-    if is_inactive:
-        return jsonify({'message': "Broadcaster already stopped!"})
-    else:
-        Broadcaster.stop_broadcast()
-        return jsonify({'message': "Broadcaster stopped!"})
+    msg = Broadcaster.stop_broadcast()
+    return jsonify({'message': msg})
 
 @app.route('/api/v1/resource-management/discovery/watch/')
 def start_watching():
-    t = threading.Thread(target=Watcher.on_topology_changed)
-    t.start()
-    return jsonify({'message': "Started watching!"})
+    is_running = Broadcaster.check_active()
+    if is_running:
+        watching = Watcher.check_watching_running("hostapd_cli")
+        if watching:
+            return jsonify({'message': "Already watching!"})
+        else:
+            t = threading.Thread(target=Watcher.on_topology_changed)
+            t.start()
+            return jsonify({'message': "Started watching!"})
+    else:
+        return jsonify({'message': "Broadcaster not running! Cannot start watching!"})
 
 @app.route('/api/v1/resource-management/discovery/watch/',methods=['PUT'])
 def stop_watching():
-    Watcher.stop()
-    return jsonify({'message': "Stopped watching!"})
+    msg = Watcher.stop()
+    return jsonify({'message': msg})
 
 
 @app.route('/api/v1/resource-management/discovery/scan/<interface_name>', methods=['GET'])
@@ -134,6 +137,11 @@ def start_dhcp():
         Broadcaster.fill_dhcp_config(interface_name)
         msg = Broadcaster.start_dhcp()
         return jsonify({'message': msg})
+    
+@app.route('/api/v1/resource-management/discovery/dhcp/', methods=['PUT'])
+def stop_dhcp():
+    msg = Broadcaster.stop_dhcp()
+    return jsonify({'message': msg})
 
 if __name__ == '__main__':
     
