@@ -54,7 +54,7 @@ class AreaResilience:
         self._connected = False
         self._imBackup = False
         self._imLeader = False
-        self._imCapable = False
+        self._imCapable = False     # ignored if isLeader is set via env variable
         self._leaderFailed = False
         self._backupSelected = False
         self._startupCorrect = False
@@ -82,11 +82,15 @@ class AreaResilience:
 
     def __imCapable(self):
         """
+        Checks if device is capable of being a Leader.
 
-        :return:
+        :return: True if device is capable to become Leader, False otherwise
         """
-        # TODO: Capable by evaluation, not hardcoded
-        return True  # By default, all agents will be capable to be leader.
+        # 1. WiFi capability
+        if CPARAMS.WIFI_DEV_FLAG != '':
+            return True
+        else:
+            return False
 
     def __getCIMIData(self, key, default=None):
         """
