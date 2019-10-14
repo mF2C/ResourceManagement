@@ -219,6 +219,18 @@ curl -X GET "http://localhost/api/v2/resource-management/policies/roleChange/lea
 
 ## CHANGELOG
 
+### 2.0.7 (01/10/2019)
+
+#### Added
+
+    + CAU client is triggered from the Leader
+
+#### Changed
+
+    * Reduced the amount of logs from backups
+    * Area Resilience get the topology from childrenIPs
+    * Minor change in message syntax for keepalive messages
+
 ### 2.0.6 (23/09/2019)
 
 #### Added

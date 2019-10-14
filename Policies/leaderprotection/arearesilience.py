@@ -17,7 +17,6 @@ from common.common import CPARAMS, URLS
 
 from requests.exceptions import ConnectTimeout as timeout
 
-__status__ = 'Production'
 __maintainer__ = 'Alejandro Jurnet'
 __email__ = 'ajurnet@ac.upc.edu'
 __author__ = 'Universitat Politècnica de Catalunya'
@@ -36,6 +35,7 @@ class BackupEntry:
 class AreaResilience:
     # SELECTION_PORT = 46051  # 29512 # Deprecated - Keepalive is now REST!
     # LEADER_PORT = 46052  # 29513
+    POLICIES_EXTERNAL_PORT = CPARAMS.POLICIES_EXTERNAL_PORT if CPARAMS.MF2C_FLAG else CPARAMS.POLICIES_INTERNAL_PORT
 
     MAX_RETRY_ATTEMPTS = 5
 
@@ -59,8 +59,10 @@ class AreaResilience:
         self._backupSelected = False
         self._startupCorrect = False
         self._deviceID = ''
+        self._deviceIP = ''
         self._leaderIP = ''
         self._backupPriority = -1
+        self._nextPriority = 1
 
         self.backupDatabase = []
         self.backupDatabaseLock = threading.Lock()
@@ -148,12 +150,13 @@ class AreaResilience:
             correct = self.__send_demotion_message(backup.deviceIP)
         return correct
 
-    def start(self, deviceID): # TODO: Give deviceID at startup?
+    def start(self, deviceID, deviceIP):
         """
 
         :return:
         """
         self._deviceID = deviceID
+        self._deviceIP = deviceIP
         if self.isStarted:
             LOG.warning(self.TAG + 'Procedure is already started...')
             return False
@@ -174,7 +177,7 @@ class AreaResilience:
             if self.th_proc is not None:
                 while self.th_proc.is_alive():
                     LOG.debug(self.TAG + 'Waiting {} to resume activity...'.format(self.th_proc.name))
-                    sleep(0.1)
+                    sleep(0.5)
 
             if self.th_keep is not None:
                 while self.th_keep.is_alive():
@@ -269,7 +272,7 @@ class AreaResilience:
         if self._leaderFailed:
             # Only if leader fails, triggers are needed, otherwise no action is required
             try:
-                r = requests.get(URLS.build_url_address('{}leader'.format(URLS.URL_POLICIES_ROLECHANGE), portaddr=('127.0.0.1', '46050'))) #TODO Addr+Prt by CPARAMS; Parametrize
+                r = requests.get(URLS.build_url_address('{}leader'.format(URLS.URL_POLICIES_ROLECHANGE), portaddr=('127.0.0.1', CPARAMS.POLICIES_INTERNAL_PORT)))
                 LOG.info(self.TAG + 'Trigger to AgentStart Switch done. {}'.format(r.json()))
                 self._imLeader = True
                 self._imBackup = False
@@ -322,15 +325,24 @@ class AreaResilience:
                 while self._connected and correct_backups < self.MINIMUM_BACKUPS and len(topology) > 0:
                     device = topology[0]
                     topology.remove(device)
-                    # Todo: Evaluate if selected device is capable
-                    correct = self.__send_election_message(device.get('deviceIP'))
-                    if correct:
-                        new_backup = BackupEntry(device.get('deviceID'), device.get('deviceIP'), 1)
-                        with self.backupDatabaseLock:
-                            self.backupDatabase.append(new_backup)
-                        LOG.info('Backup {}[{}] added with priority {}'.format(device.get('deviceID'), device.get('deviceIP'), 1))
-                        correct_backups += 1
-                        new_backups.append(new_backups)
+                    found = False
+                    with self.backupDatabaseLock:
+                        for backup in self.backupDatabase:
+                            if backup.deviceIP == device.get('deviceIP'):
+                            # if backup.deviceID == device.get('deviceID'):    # Dataclay doesnt sync device res
+                                found = True
+                                break
+                    if not found:
+                        # Todo: Evaluate if selected device is capable
+                        correct = self.__send_election_message(device.get('deviceIP'))
+                        if correct:
+                            new_backup = BackupEntry(device.get('deviceID'), device.get('deviceIP'), self._nextPriority)
+                            with self.backupDatabaseLock:
+                                self.backupDatabase.append(new_backup)
+                            LOG.info('Backup {}[{}] added with priority {}'.format(device.get('deviceID'), device.get('deviceIP'), self._nextPriority))
+                            correct_backups += 1
+                            self._nextPriority += 1
+                            new_backups.append(new_backups)
 
                 if correct_backups >= self.MINIMUM_BACKUPS:
                     # Now we have enough
@@ -370,7 +382,8 @@ class AreaResilience:
         attempt = 0
         counter = 0
         payload = {
-            'deviceID': self._deviceID
+            'deviceID': self._deviceID,
+            'deviceIP': self._deviceIP
         }
         self._imBackup = True
         while self._connected and attempt < self.MAX_RETRY_ATTEMPTS:
@@ -378,7 +391,7 @@ class AreaResilience:
             while self._connected and not stopLoop:
                 try:
                     # 1. Requests to Leader Keepalive endpoint
-                    r = requests.post(URLS.build_url_address(URLS.URL_POLICIES_KEEPALIVE, portaddr=(self._leaderIP, CPARAMS.POLICIES_PORT)), json=payload, timeout=0.5)
+                    r = requests.post(URLS.build_url_address(URLS.URL_POLICIES_KEEPALIVE, portaddr=(self._leaderIP, self.POLICIES_EXTERNAL_PORT), secure=CPARAMS.MF2C_FLAG), json=payload, timeout=0.5, verify=False)
                     LOG.debug(self.TAG + 'Keepalive sent [#{}]'.format(counter))
                     # 2. Process Reply
                     jreply = r.json()
@@ -437,10 +450,12 @@ class AreaResilience:
                         self.__send_demotion_message(backup.deviceIP)
                         # Remove from list
                         self.backupDatabase.remove(backup)  # TODO: Inform CIMI?
+                        self._nextPriority -= 1
                         LOG.debug('Backup removed from database.')
                     else:
                         # Backup is ok
-                        LOG.debug('Backup {}[{}] is OK with TTL: {}'.format(backup.deviceID, backup.deviceIP, backup.TTL))
+                        if backup.TTL % 5 == 4: # Reduce the amount of log messages
+                            LOG.debug('Backup {}[{}] is OK with TTL: {}'.format(backup.deviceID, backup.deviceIP, backup.TTL))
             if self._connected:
                 sleep(self.TIME_KEEPER)
         LOG.warning('Keeper thread stopped')
@@ -452,7 +467,7 @@ class AreaResilience:
         :return: True if correct election, False otherwise
         """
         try:
-            r = requests.get('{}backup'.format(URLS.build_url_address(URLS.URL_POLICIES_ROLECHANGE, addr=address, port=CPARAMS.POLICIES_PORT)), timeout=1.5)
+            r = requests.get('{}backup'.format(URLS.build_url_address(URLS.URL_POLICIES_ROLECHANGE, addr=address, port=self.POLICIES_EXTERNAL_PORT, secure=CPARAMS.MF2C_FLAG)), timeout=1.5, verify=False)
             if r.status_code == 200:
                 # Correct
                 return True
@@ -474,7 +489,7 @@ class AreaResilience:
         """
         try:
             r = requests.get('{}agent'.format(
-                URLS.build_url_address(URLS.URL_POLICIES_ROLECHANGE, addr=address, port=CPARAMS.POLICIES_PORT)),
+                URLS.build_url_address(URLS.URL_POLICIES_ROLECHANGE, addr=address, port=self.POLICIES_EXTERNAL_PORT, secure=CPARAMS.MF2C_FLAG), verify=False),
                 timeout=1.5)
             if r.status_code == 200:
                 # Correct
@@ -489,11 +504,20 @@ class AreaResilience:
             LOG.exception('Selected device cannot become Agent due error in demotion message')
             return False
 
-    def receive_keepalive(self, deviceID):
+    def receive_keepalive(self, deviceID, deviceIP):
         with self.backupDatabaseLock:
             for backup in self.backupDatabase:
                 if backup.deviceID == deviceID:
                     # It's a match
+                    backup.TTL = BackupEntry.MAX_TTL
+                    LOG.debug(
+                        'backupID: {}; backupIP: {}; priority: {}; Keepalive received correctly'.format(backup.deviceID,
+                                                                                                        backup.deviceIP,
+                                                                                                        backup.priority))
+                    return True, backup.priority
+                elif backup.deviceIP == deviceIP:
+                    LOG.info('Updating deviceID {} for backup [{}]'.format(deviceID, deviceIP))
+                    backup.deviceID = deviceID
                     backup.TTL = BackupEntry.MAX_TTL
                     LOG.debug(
                         'backupID: {}; backupIP: {}; priority: {}; Keepalive received correctly'.format(backup.deviceID,

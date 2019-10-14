@@ -25,6 +25,8 @@ class CIMIcalls:
 
     CIMI_API_ENTRY = '/cloud-entry-point'
     CIMI_AGENT_RESOURCE = '/agent'
+    CIMI_DEVICE_DYNAMIC = 'device-dynamic'
+    CIMI_DEVICE = 'device'
 
     @staticmethod
     def checkCIMIstarted():
@@ -101,6 +103,57 @@ class CIMIcalls:
             return str(rjson.get('resource-id'))
         except:
             LOG.exception('CIMI agent [{}] failed'.format(URL))
+            return ''
+
+    @staticmethod
+    def get_topology():
+        resource, CIMIid = CIMIcalls.getAgentResource()
+        topology = []
+        device_id = 0
+        if 'childrenIPs' in resource:
+            for childrenIP in resource['childrenIPs']:
+                topology.append((str(device_id), str(childrenIP)))
+        LOG.debug('{} devices found in childrenIPs Agent Resource.'.format(len(topology)))
+        return topology
+
+    @staticmethod
+    def get_deviceID_from_IP(deviceIP):
+        device_static_id = ''
+
+        scode, dev_dyn_reply = CIMIcalls.get_resource(CIMIcalls.CIMI_DEVICE_DYNAMIC)
+        if scode != 200:
+            LOG.debug('Unable to query device-dynamic resource. IP cannot be found.')
+            return ''
+
+        try:
+            if 'deviceDynamics' in dev_dyn_reply:
+                device_dynamic_collection = dev_dyn_reply['deviceDynamics']
+                for item in device_dynamic_collection:
+                    if 'wifiAddress' in item and 'device' in item:
+                        if item['wifiAddress'] == deviceIP:
+                            device_static_id = item['device']['href']
+                            LOG.debug('IP {} found! Device CIMI resource: {}'.format(deviceIP,device_static_id))
+                            break
+            else:
+                LOG.error('deviceDynamics not found in {} resource'.format(CIMIcalls.CIMI_DEVICE_DYNAMIC))
+                return ''
+
+            if device_static_id != '':
+                scode2, dev_sta_reply = CIMIcalls.get_resource(device_static_id)
+                if scode2 != 200:
+                    LOG.error('Unable to query device from device-dynamic. href:{}'.format(device_static_id))
+                    return ''
+                if 'deviceID' in dev_sta_reply:
+                    LOG.debug('IP corresponds to deviceID: {}'.format(dev_sta_reply['deviceID']))
+                    return dev_sta_reply['deviceID']
+                else:
+                    LOG.error('deviceID not found in resource {}'.format(device_static_id))
+                    return ''
+            else:
+                LOG.debug('IP {} not found in {} collection.'.format(deviceIP, CIMIcalls.CIMI_DEVICE_DYNAMIC))
+                return ''
+        except:
+            LOG.exception('Exception raised getting deviceID from IP')
             return ''
 
 

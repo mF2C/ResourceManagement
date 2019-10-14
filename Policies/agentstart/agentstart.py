@@ -335,6 +335,7 @@ class AgentStart:
                 self.discovery_leader_failed = not r
             except Exception as ex:
                 LOG.exception(self.TAG + 'Discovery broadcast trigger failed!')
+                self.detectedLeaderID = self.deviceID
             LOG.info(self.TAG + 'Discovery Broadcast Trigger Done.')
         else:
             return
@@ -343,7 +344,24 @@ class AgentStart:
             return
         self.discovery_failed = self.discovery_leader_failed
 
-        # 2. Switch leader categorization (or start if not started)
+        # 2. Start CAU-client
+        if self._connected:
+            self.cauclient_failed = True
+            LOG.debug(self.TAG + 'Sending trigger to CAU client...')
+            try:
+                r = self.__trigger_triggerCAUclient()
+                self.cauclient_failed = not r
+            except Exception:
+                LOG.exception(self.TAG + 'CAUclient failed.')
+                self.cauclient_failed = True
+            LOG.info(self.TAG + 'CAU client Trigger Done.')
+        else:
+            return
+        if not CPARAMS.DEBUG_FLAG and self.cauclient_failed:
+            LOG.critical(self.TAG + 'CAU-Client failed, interrupting agent start.')
+            return
+
+        # 3. Switch leader categorization (or start if not started)
         if self.categorization_started:
             self.categorization_leader_failed = True
             # Switch!
@@ -388,7 +406,7 @@ class AgentStart:
             return
 
         # Create/Modify Agent Resource
-        self.deviceIP = CPARAMS.LEADER_DISCOVERY_IP if CPARAMS.DEVICE_IP_FLAG is None else CPARAMS.DEVICE_IP_FLAG
+        self.deviceIP = CPARAMS.LEADER_DISCOVERY_IP if CPARAMS.DEVICE_IP_FLAG is None and not self.discovery_leader_failed else CPARAMS.DEVICE_IP_FLAG
         self._cimi_agent_resource = AgentResource(self.deviceID, self.deviceIP, True,
                                                   True, self.imLeader)
         # deprecated: real values of Auth and Conn (as now are None in the Leader)

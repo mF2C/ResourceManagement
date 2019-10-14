@@ -18,6 +18,8 @@ from os import environ
 ##############################
 class common_params:
     POLICIES_PORT = 46050
+    POLICIES_INTERNAL_PORT = POLICIES_PORT
+    POLICIES_EXTERNAL_PORT = 443
 
     CIMI_URL = 'http://cimi:8201/api'
     CIMI_HEADER = {'slipstream-authn-info': 'super ADMIN'}
@@ -52,6 +54,8 @@ class common_params:
             'WIFI_CONFIG_FILE'  : self.WIFI_CONFIG_FILE,
             'TIME_WAIT_ALIVE'   : self.TIME_WAIT_ALIVE,
             'POLICIES_PORT'     : self.POLICIES_PORT,
+            'POLICIES_INTERNAL_PORT'    : self.POLICIES_INTERNAL_PORT,
+            'POLICIES_EXTERNAL_PORT'    : self.POLICIES_EXTERNAL_PORT,
             'DEVICEID_FLAG'     : self.DEVICEID_FLAG
         }
 
@@ -105,7 +109,7 @@ class ModuleURLs:
         self.addr = str(addr)
         self.port = port
 
-    def build_url_address(self, api_url, addr=None, port=None, portaddr=None):
+    def build_url_address(self, api_url, addr=None, port=None, portaddr=None, secure=False):
         if addr is not None:
             use_addr = str(addr)
         else:
@@ -117,8 +121,11 @@ class ModuleURLs:
         if portaddr is not None and (type(portaddr) == tuple or type(portaddr) == list) and len(portaddr) > 1:
             use_addr = str(portaddr[0])
             use_port = str(portaddr[1])
-
-        return str('http://' + use_addr + ':' + use_port + str(api_url))
+        if secure:
+            url = str('https://' + use_addr + ':' + use_port + str(api_url))
+        else:
+            url = str('http://' + use_addr + ':' + use_port + str(api_url))
+        return url
 
 
 URLS = ModuleURLs()
