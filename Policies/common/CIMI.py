@@ -243,3 +243,21 @@ class AgentResource:
             p.update({'backup_ip' : self.backupIP})
 
         return p
+
+    @staticmethod
+    def load(agent_dict):
+        if type(agent_dict) != dict:
+            return AgentResource(None,None,None,None,None)
+        deviceID = agent_dict.get('device_id')
+        deviceIP = agent_dict.get('device_ip')
+        authenticated = agent_dict.get('authenticated')
+        connected = agent_dict.get('connected')
+        isLeader = agent_dict.get('isLeader')
+        leaderID = agent_dict.get('leader_id')
+        leaderIP = agent_dict.get('leader_ip')
+        backupIP = agent_dict.get('backup_ip')
+        childrenIPs = [] if agent_dict.get('childrenIPs') is None else agent_dict.get('childrenIPs')
+
+        ar = AgentResource(deviceID,deviceIP,authenticated,connected,isLeader,leaderID,leaderIP,backupIP)
+        ar.childrenIPs = childrenIPs
+        return ar
