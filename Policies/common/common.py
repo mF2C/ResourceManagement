@@ -26,6 +26,7 @@ class common_params:
     CAU_CLIENT_ADDR = ('cau-client', 46065)
     WIFI_CONFIG_FILE = '/discovery/mF2C-VSIE.conf'
     LEADER_DISCOVERY_IP = '192.168.7.1'
+    VPN_FILE_PATH = '/vpninfo/vpnclient.status'
 
     TIME_WAIT_INIT = 10.
     TIME_WAIT_ALIVE = 5.
@@ -39,6 +40,8 @@ class common_params:
         self.MF2C_FLAG = bool(environ.get('MF2C', default='False') == 'True')
         self.WIFI_DEV_FLAG = str(environ.get('WIFI_DEV_FLAG', default=''))
         self.DEVICEID_FLAG = str(environ.get('DEVICEID', default='agent/1234'))     # TODO: Remove this
+        self.CLOUD_FLAG = bool(environ.get('isCloud', default='False') == 'True')
+        self.CLOUD_AGENT_IP = environ.get('MF2C_CLOUD_AGENT', default=None)
 
         self.__dicc = {
             'LEADER_FLAG'       : self.LEADER_FLAG,
@@ -56,7 +59,9 @@ class common_params:
             'POLICIES_PORT'     : self.POLICIES_PORT,
             'POLICIES_INTERNAL_PORT'    : self.POLICIES_INTERNAL_PORT,
             'POLICIES_EXTERNAL_PORT'    : self.POLICIES_EXTERNAL_PORT,
-            'DEVICEID_FLAG'     : self.DEVICEID_FLAG
+            'DEVICEID_FLAG'     : self.DEVICEID_FLAG,
+            'CLOUD_FLAG'                : self.CLOUD_FLAG,
+            'CLOUD_AGENT_IP'            : self.CLOUD_AGENT_IP
         }
 
     def get_all(self):
