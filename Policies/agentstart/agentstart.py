@@ -466,6 +466,17 @@ class AgentStart:
             LOG.critical(self.TAG + 'Policies Area Resilience failed, interrupting agent start.')
             return
 
+        # 8. Watch Leader
+        if self._connected and not self.discovery_failed:
+            LOG.debug(self.TAG + 'Start Discovery Leader Watch...')
+            try:
+                self.__trigger_startDiscoveryWatch()
+            except Exception:
+                LOG.exception(self.TAG + 'Watch Discovery Start Fail.')
+            LOG.info(self.TAG + 'Watch Discovery Start Trigger Done.')
+        elif self.discovery_failed:
+            LOG.warning(self.TAG + 'Discovery Watch cancelled due Discovery Trigger failed')
+
         # Print summary
         self.__print_summary()
 
@@ -491,7 +502,7 @@ class AgentStart:
             status = CIMI.modify_resource(self._cimi_agent_resource_id, self._cimi_agent_resource.getCIMIdicc())
 
         # 6. Finish
-        return   # TODO: Return something?
+        return
 
     def __cloud_flow(self):
         LOG.info(self.TAG + 'Cloud flow started.')
