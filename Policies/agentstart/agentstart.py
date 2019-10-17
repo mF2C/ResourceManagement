@@ -31,7 +31,7 @@ class AgentStart:
     TAG = '\033[36m' + '[FCJP]: ' + '\033[0m'
     ETAG = '\033[31m' + '[FCJP] ERROR: ' + '\033[0m'
     MAX_MISSING_SCANS = 10      # TODO: ENV Policies Param
-    MAX_VPN_FAILURES = 50
+    MAX_VPN_FAILURES = 20
     WAIT_TIME_CIMI = 2.
     WAIT_TIME_VPN = 5.
     ALE_ENABLED = False
