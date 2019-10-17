@@ -16,6 +16,7 @@ from time import sleep
 from common.logs import LOG
 from common.common import CPARAMS, URLS
 from common.CIMI import CIMIcalls as CIMI, AgentResource
+from common.vpn import VPN_mF2C as VPN
 
 from requests.exceptions import ConnectTimeout as timeout
 from requests.exceptions import ReadTimeout as timeout2
@@ -30,7 +31,9 @@ class AgentStart:
     TAG = '\033[36m' + '[FCJP]: ' + '\033[0m'
     ETAG = '\033[31m' + '[FCJP] ERROR: ' + '\033[0m'
     MAX_MISSING_SCANS = 10      # TODO: ENV Policies Param
+    MAX_VPN_FAILURES = 20
     WAIT_TIME_CIMI = 2.
+    WAIT_TIME_VPN = 5.
     ALE_ENABLED = False
 
     def __init__(self, addr_dis=None, addr_id=None, addr_cat=None, addr_pol=None, addr_CAUcl=None, addr_dcly=None):
@@ -38,6 +41,7 @@ class AgentStart:
         self.isStarted = False
         self.isSwitched = False
         self.imLeader = False
+        self.imCloud = False
         self.th_proc = threading.Thread()
         self._cimi_agent_resource_id = None
         self._cimi_agent_resource = None
@@ -51,6 +55,8 @@ class AgentStart:
         self.secureConnection = None
         self.deviceIP = None
         self.leaderIP = None
+        self.vpnIP = None
+        self.cloudIP = CPARAMS.CLOUD_AGENT_IP       # Default: None
 
         self.categorization_started = None
         self.arearesilience_started = None
@@ -82,12 +88,13 @@ class AgentStart:
         self.URL_POLICIES = URLS.build_url_address(URLS.URL_POLICIES, portaddr=addr_pol)
         self.URL_DISCOVERY_WATCH = URLS.build_url_address(URLS.URL_DISCOVERY_WATCH, portaddr=addr_dis)
 
-    def start(self, imLeader):
+    def start(self, imLeader, imCloud):
         if self.isStarted:
             print(self.TAG, 'Procedure is already started...')
             return False
         else:
             self.imLeader = imLeader
+            self.imCloud = imCloud
             self._connected = True
             self.th_proc = threading.Thread(name='th_fcjp', target=self.__agent_startup_flow, daemon=True)
             self.th_proc.start()
@@ -100,10 +107,10 @@ class AgentStart:
             return False
 
         if self.th_proc.is_alive():
-            LOG.debug(self.TAG + 'Stoping thread {} to switch...'.format(self.th_proc.name))
+            LOG.debug(self.TAG + 'Stopping thread {} to switch...'.format(self.th_proc.name))
             self._connected = False
             self.th_proc.join()
-        LOG.debug('Thread successfully stoped.')
+        LOG.debug('Thread successfully stopped.')
         self._connected = True
 
         if self.imLeader != imLeader:
@@ -157,10 +164,16 @@ class AgentStart:
                 LOG.critical(self.TAG + 'Identification failed, interrupting agent start.')
                 return
 
-            # 2. Check if im a Leader - PLE
+            # 2.1. Check if im Cloud Agent
+            if self.imCloud:
+                # start cloud flow
+                self.__cloud_flow()
+                return
+
+            # 2.2. Check if im a Leader - PLE
             if self.imLeader:
                 # switch to leader
-                self.__leader_switch_flow()  # TODO: imCapable?
+                self.__leader_switch_flow()
                 return
 
             # remain as agent
@@ -211,8 +224,6 @@ class AgentStart:
                 self.deviceIP = CPARAMS.DEVICE_IP_FLAG
                 self.leaderIP = CPARAMS.LEADER_IP_FLAG
 
-            LOG.info(self.TAG + 'deviceIP={}, leaderIP={}'.format(self.deviceIP, self.leaderIP))
-
             # 5. CAU client
             if self._connected:
                 self.cauclient_failed = True
@@ -230,7 +241,33 @@ class AgentStart:
                 LOG.critical(self.TAG + 'CAU-Client failed, interrupting agent start.')
                 return
 
-            # 5. Categorization
+            # 5.1. VPN get IP
+            attempt = 0
+            while self._connected and self.vpnIP is None and attempt < self.MAX_VPN_FAILURES:
+                vpn_ip = VPN.getIPfromFile()
+                self.vpnIP = vpn_ip if vpn_ip != '' else None
+                if self.vpnIP is None:
+                    LOG.debug(self.TAG + 'VPN IP cannot be obtained... Retry in {}s'.format(self.WAIT_TIME_VPN))
+                    sleep(self.WAIT_TIME_VPN)
+                    attempt += 1
+            if self.vpnIP is None:
+                LOG.warning(self.TAG + 'VPN IP cannot be obtained.')
+                if not CPARAMS.DEBUG_FLAG:
+                    LOG.critical(self.TAG + 'Policies module cannot continue its activity without VPN IP')
+                    exit(4)
+            else:
+                LOG.info(self.TAG + 'VPN IP: [{}]'.format(self.vpnIP))
+
+            # 5.2 If not static configuration and no leader detected, VPN configuration
+            if self.deviceIP is None and self.leaderIP is None:
+                LOG.debug(
+                    self.TAG + 'Static configuration for deviceIP and leaderIP not found. Using VPN values')
+                self.deviceIP = self.vpnIP
+                self.leaderIP = self.cloudIP
+
+            LOG.info(self.TAG + 'deviceIP={}, leaderIP={}'.format(self.deviceIP, self.leaderIP))
+
+            # 6. Categorization
             if self._connected and not self.categorization_started:
                 self.categorization_failed = True
                 LOG.debug(self.TAG + 'Sending start trigger to Categorization...')
@@ -248,7 +285,7 @@ class AgentStart:
                 LOG.critical(self.TAG + 'Categorization failed, interrupting agent start.')
                 return
 
-            # 6. Area Resilience
+            # 7. Area Resilience
             if self._connected and not self.arearesilience_started:
                 self.policies_failed = True
                 LOG.debug(self.TAG + 'Sending start trigger to Policies...')
@@ -269,7 +306,6 @@ class AgentStart:
             self.__print_summary()
 
             # Create/Modify Agent Resource
-            # self.deviceIP = ''  # First value from Join trigger. Real value updated in categorization.
             self.deviceIP = '' if self.deviceIP is None else self.deviceIP
             self._cimi_agent_resource = AgentResource(self.deviceID, self.deviceIP, self.isAuthenticated,
                                                       self.secureConnection, self.imLeader)
@@ -282,12 +318,21 @@ class AgentStart:
                                                           self.secureConnection, self.imLeader, leaderIP=self.leaderIP)
                 LOG.debug(self.TAG + 'CIMI Agent Resource payload: {}'.format(self._cimi_agent_resource.getCIMIdicc()))
                 status = CIMI.modify_resource(self._cimi_agent_resource_id, self._cimi_agent_resource.getCIMIdicc())
+                if self._cimi_agent_resource_id == '':
+                    LOG.warning(self.TAG + 'Agent resource creation failed.')
+                    if not CPARAMS.DEBUG_FLAG:
+                        LOG.error('Stopping Policies module due to resource creation failure.')
+                        exit(4)
             else:
                 # Agent resource already exists
                 status = CIMI.modify_resource(self._cimi_agent_resource_id, self._cimi_agent_resource.getCIMIdicc())
+                sleep(.1)
+                self._cimi_agent_resource = AgentResource(self.deviceID, self.deviceIP, self.isAuthenticated,
+                                                          self.secureConnection, self.imLeader, leaderIP=self.leaderIP)
+                LOG.debug(self.TAG + 'CIMI Agent Resource payload: {}'.format(self._cimi_agent_resource.getCIMIdicc()))
+                status = CIMI.modify_resource(self._cimi_agent_resource_id, self._cimi_agent_resource.getCIMIdicc())
 
-
-            # 7. Watch Leader
+            # 8. Watch Leader
             if self._connected and not self.discovery_failed:
                 LOG.debug(self.TAG + 'Start Discovery Leader Watch...')
                 try:
@@ -316,7 +361,6 @@ class AgentStart:
                 return
 
             if CPARAMS.DEBUG_FLAG and self.discovery_failed:
-                # TODO: Delete this in future versions
                 LOG.debug(self.TAG + 'No rescan available. Stoping activity')
                 return
 
@@ -361,7 +405,24 @@ class AgentStart:
             LOG.critical(self.TAG + 'CAU-Client failed, interrupting agent start.')
             return
 
-        # 3. Switch leader categorization (or start if not started)
+        # 3. VPN get IP
+        attempt = 0
+        while self._connected and self.vpnIP is None and attempt < self.MAX_VPN_FAILURES:
+            vpn_ip = VPN.getIPfromFile()
+            self.vpnIP = vpn_ip if vpn_ip != '' else None
+            if self.vpnIP is None:
+                LOG.debug(self.TAG + 'VPN IP cannot be obtained... Retry in {}s'.format(self.WAIT_TIME_VPN))
+                sleep(self.WAIT_TIME_VPN)
+                attempt += 1
+        if self.vpnIP is None:
+            LOG.warning(self.TAG + 'VPN IP cannot be obtained.')
+            if not CPARAMS.DEBUG_FLAG:
+                LOG.critical(self.TAG + 'Policies module cannot continue its activity without VPN IP')
+                exit(4)
+        else:
+            LOG.info(self.TAG + 'VPN IP: [{}]'.format(self.vpnIP))
+
+        # 4. Switch leader categorization (or start if not started)
         if self.categorization_started:
             self.categorization_leader_failed = True
             # Switch!
@@ -389,7 +450,7 @@ class AgentStart:
             return
         self.categorization_failed = self.categorization_leader_failed
 
-        # 4. Start Area Resilience (if not started)
+        # 5. Start Area Resilience (if not started)
         if not self.arearesilience_started:
             self.policies_failed = True
             LOG.debug(self.TAG + 'Sending start trigger to Policies...')
@@ -405,10 +466,33 @@ class AgentStart:
             LOG.critical(self.TAG + 'Policies Area Resilience failed, interrupting agent start.')
             return
 
+        # 8. Watch Leader
+        if self._connected and not self.discovery_failed:
+            LOG.debug(self.TAG + 'Start Discovery Leader Watch...')
+            try:
+                self.__trigger_startDiscoveryWatch()
+            except Exception:
+                LOG.exception(self.TAG + 'Watch Discovery Start Fail.')
+            LOG.info(self.TAG + 'Watch Discovery Start Trigger Done.')
+        elif self.discovery_failed:
+            LOG.warning(self.TAG + 'Discovery Watch cancelled due Discovery Trigger failed')
+
+        # Print summary
+        self.__print_summary()
+
         # Create/Modify Agent Resource
-        self.deviceIP = CPARAMS.LEADER_DISCOVERY_IP if CPARAMS.DEVICE_IP_FLAG is None and not self.discovery_leader_failed else CPARAMS.DEVICE_IP_FLAG
+        # IF static IP configuration setup
+        self.deviceIP = CPARAMS.DEVICE_IP_FLAG
+        self.leaderIP = CPARAMS.LEADER_IP_FLAG
+        if self.deviceIP is None or self.leaderIP is None:
+            LOG.debug(self.TAG + 'No static configuration was detected. Applying VPN values')
+            self.deviceIP = self.vpnIP
+            self.leaderIP = self.cloudIP
+
+        LOG.info(self.TAG + 'deviceIP={}, leaderIP={}'.format(self.deviceIP, self.leaderIP))
+
         self._cimi_agent_resource = AgentResource(self.deviceID, self.deviceIP, True,
-                                                  True, self.imLeader)
+                                                  True, self.imLeader, leaderIP=self.leaderIP)
         # deprecated: real values of Auth and Conn (as now are None in the Leader)
         if self._cimi_agent_resource_id is None:
             # Create agent resource
@@ -417,8 +501,92 @@ class AgentStart:
             # Agent resource already exists
             status = CIMI.modify_resource(self._cimi_agent_resource_id, self._cimi_agent_resource.getCIMIdicc())
 
-        # 5. Finish
-        return   # TODO: Return something?
+        # 6. Finish
+        return
+
+    def __cloud_flow(self):
+        LOG.info(self.TAG + 'Cloud flow started.')
+
+        # 0. Cloud Agent is Leader by definition
+        self.imLeader = self.imCloud
+
+        # 1. Discovery
+        LOG.debug(self.TAG + 'Discovery trigger ignored in Cloud flow.')
+        self.discovery_failed = False
+        self.discovery_leader_failed = False
+        self.detectedLeaderID = self.deviceID
+
+        # 2. Start CAU-client
+        if self._connected:
+            self.cauclient_failed = True
+            LOG.debug(self.TAG + 'Sending trigger to CAU client...')
+            try:
+                r = self.__trigger_triggerCAUclient()
+                self.cauclient_failed = not r
+            except Exception:
+                LOG.exception(self.TAG + 'CAUclient failed.')
+                self.cauclient_failed = True
+            LOG.info(self.TAG + 'CAU client Trigger Done.')
+        else:
+            return
+        if not CPARAMS.DEBUG_FLAG and self.cauclient_failed:
+            LOG.critical(self.TAG + 'CAU-Client failed, interrupting agent start.')
+            return
+
+        # 3. VPN get IP
+        attempt = 0
+        while self._connected and self.vpnIP is None and attempt < self.MAX_VPN_FAILURES:
+            vpn_ip = VPN.getIPfromFile()
+            self.vpnIP = vpn_ip if vpn_ip != '' else None
+            if self.vpnIP is None:
+                LOG.debug(self.TAG + 'VPN IP cannot be obtained... Retry in {}s'.format(self.WAIT_TIME_VPN))
+                sleep(self.WAIT_TIME_VPN)
+                attempt += 1
+        if self.vpnIP is None:
+            LOG.warning(self.TAG + 'VPN IP cannot be obtained.')
+            if not CPARAMS.DEBUG_FLAG:
+                LOG.critical(self.TAG + 'Policies module cannot continue its activity without VPN IP')
+                exit(4)
+        else:
+            LOG.info(self.TAG + 'VPN IP: [{}]'.format(self.vpnIP))
+
+        # 4. Switch leader categorization (or start if not started)
+        if self.categorization_started:
+            self.categorization_leader_failed = True
+            # Switch!
+            LOG.debug(self.TAG + 'Sending switch trigger to Categorization...')
+            try:
+                self.__trigger_switch_categorization()
+                self.categorization_leader_failed = False
+            except Exception:
+                LOG.exception(self.TAG + 'Categorization switch to leader failed')
+            LOG.info(self.TAG + 'Categorization Switch Trigger Done.')
+
+        # 5. Area Resilience
+        LOG.debug(self.TAG + 'Area Resilience trigger ignored in Cloud flow.')
+        self.policies_failed = False
+
+        # Print summary
+        self.__print_summary()
+
+        # Create Agent Resource
+        self.deviceIP = self.cloudIP
+        self.leaderIP = None
+        self._cimi_agent_resource = AgentResource(self.deviceID, self.deviceIP, True,
+                                                  True, self.imLeader)
+        LOG.debug(self.TAG + 'CIMI Agent Resource payload: {}'.format(self._cimi_agent_resource.getCIMIdicc()))
+        if self._cimi_agent_resource_id is None:
+            # Create agent resource
+            self._cimi_agent_resource_id = CIMI.createAgentResource(self._cimi_agent_resource.getCIMIdicc())
+            if self._cimi_agent_resource_id == '':
+                LOG.warning(self.TAG + 'Agent resource creation failed.')
+                if not CPARAMS.DEBUG_FLAG:
+                    LOG.error('Stopping Policies module due to resource creation failure.')
+                    exit(4)
+        else:
+            # Agent resource already exists
+            status = CIMI.modify_resource(self._cimi_agent_resource_id, self._cimi_agent_resource.getCIMIdicc())
+
 
     def __agent_switch_flow(self):
         """
@@ -444,10 +612,12 @@ class AgentStart:
             'lpp_started': self.arearesilience_started,
             'categorization_switched': self.categorization_switched,
             'discovery_switched': self.discovery_switched,
-            # 'dataclay_started': self.dataclay_started,
             'isLeader': self.imLeader,
+            'isCloud': self.imCloud,
             'leaderIP': self.leaderIP,
-            'deviceIP': self.deviceIP
+            'deviceIP': self.deviceIP,
+            'vpnIP': self.vpnIP,
+            'cloudIP': self.cloudIP
         }
         return data
 

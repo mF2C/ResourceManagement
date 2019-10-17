@@ -14,6 +14,7 @@ from random import randrange
 
 from common.logs import LOG
 from common.common import CPARAMS, URLS
+from common.CIMI import CIMIcalls as CIMI, AgentResource
 
 from requests.exceptions import ConnectTimeout as timeout
 
@@ -54,7 +55,7 @@ class AreaResilience:
         self._connected = False
         self._imBackup = False
         self._imLeader = False
-        self._imCapable = False
+        self._imCapable = False     # ignored if isLeader is set via env variable
         self._leaderFailed = False
         self._backupSelected = False
         self._startupCorrect = False
@@ -82,11 +83,15 @@ class AreaResilience:
 
     def __imCapable(self):
         """
+        Checks if device is capable of being a Leader.
 
-        :return:
+        :return: True if device is capable to become Leader, False otherwise
         """
-        # TODO: Capable by evaluation, not hardcoded
-        return True  # By default, all agents will be capable to be leader.
+        # 1. WiFi capability
+        if CPARAMS.WIFI_DEV_FLAG != '':
+            return True
+        else:
+            return False
 
     def __getCIMIData(self, key, default=None):
         """
@@ -125,6 +130,7 @@ class AreaResilience:
                 with self.backupDatabaseLock:
                     self.backupDatabase.append(new_backup)
                 LOG.info('Backup {}[{}] added with priority {}'.format(deviceID, deviceIP, priority))
+                addBackupOnAgentResource(new_backup.deviceIP)
             return correct
 
     def deleteBackup(self, deviceID):
@@ -148,6 +154,7 @@ class AreaResilience:
                 self.backupDatabase.remove(backup)
             # And now... Let him know...
             correct = self.__send_demotion_message(backup.deviceIP)
+            deleteBackupOnAgentResource(backup.deviceIP)
         return correct
 
     def start(self, deviceID, deviceIP):
@@ -343,6 +350,7 @@ class AreaResilience:
                             correct_backups += 1
                             self._nextPriority += 1
                             new_backups.append(new_backups)
+                            addBackupOnAgentResource(new_backup.deviceIP)
 
                 if correct_backups >= self.MINIMUM_BACKUPS:
                     # Now we have enough
@@ -448,6 +456,7 @@ class AreaResilience:
                         # Backup is down
                         LOG.warning('Backup {}[{}] is DOWN with TTL: {}'.format(backup.deviceID, backup.deviceIP, backup.TTL))
                         self.__send_demotion_message(backup.deviceIP)
+                        deleteBackupOnAgentResource(backup.deviceIP)
                         # Remove from list
                         self.backupDatabase.remove(backup)  # TODO: Inform CIMI?
                         self._nextPriority -= 1
@@ -525,3 +534,27 @@ class AreaResilience:
                                                                                                         backup.priority))
                     return True, backup.priority
         return False, self.PRIORITY_ON_DEMOTION
+
+
+def addBackupOnAgentResource(backupIP):
+    try:
+        agent_resource, agent_resource_id = CIMI.getAgentResource()
+        ar = AgentResource.load(agent_resource)
+        ar.backupIP = backupIP
+        LOG.debug('Adding backup [{}] in Agent Resource'.format(backupIP))
+        CIMI.modify_resource(agent_resource_id, ar.getCIMIdicc())
+    except:
+        LOG.exception('Add backup in Agent resource failed')
+
+
+def deleteBackupOnAgentResource(backupIP):
+    try:
+        agent_resource, agent_resource_id = CIMI.getAgentResource()
+        ar = AgentResource.load(agent_resource)
+        if ar.backupIP != backupIP:
+            LOG.warning('Backup [{}] does not match [{}] stored in Agent Resource'.format(ar.backupIP, backupIP))
+        ar.backupIP = None
+        LOG.debug('Adding backup [{}] in Agent Resource')
+        CIMI.modify_resource(agent_resource_id, ar.getCIMIdicc())
+    except:
+        LOG.exception('Add backup in Agent resource failed')

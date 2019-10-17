@@ -31,7 +31,7 @@ import subprocess
 __status__ = 'Production'
 __maintainer__ = 'Alejandro Jurnet'
 __email__ = 'ajurnet@ac.upc.edu'
-__version__ = '2.0.7'
+__version__ = '2.0.8'
 __author__ = 'Universitat Politècnica de Catalunya'
 
 # ### Global Variables ### #
@@ -75,7 +75,8 @@ keepalive_reply_model = api.model('Keepalive Reply Message', {
 
 leader_info_model = api.model('Leader Info Message', {
     'imLeader': fields.Boolean(required=True, description='If the actual role is Leader'),
-    'imBackup': fields.Boolean(required=True, description='If the actual role is Backup')
+    'imBackup': fields.Boolean(required=True, description='If the actual role is Backup'),  # TODO: Check with Roman.
+    'imCloud' : fields.Boolean(required=True, description='If the actual role is Cloud Agent')
 })
 
 components_info_model = api.model('Resource Manager Components Information', {
@@ -148,7 +149,7 @@ class startAgent(Resource):
     @pl.response(403, 'Already Started')
     def get(self):
         """Start Agent"""
-        started = agentstart.start(CPARAMS.LEADER_FLAG)
+        started = agentstart.start(CPARAMS.LEADER_FLAG, CPARAMS.CLOUD_FLAG)
         if started:
             return {'started': started}, 200
         else:
@@ -329,7 +330,8 @@ class leaderInfo(Resource):     # TODO: Provisional, remove when possible
         """Leader and Backup information"""
         return {
             'imLeader': arearesilience.imLeader(),
-            'imBackup': arearesilience.imBackup()
+            'imBackup': arearesilience.imBackup(),
+            'imCloud' : agentstart.imCloud
         }, 200
 
 
