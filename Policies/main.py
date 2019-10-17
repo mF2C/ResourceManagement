@@ -31,7 +31,7 @@ import subprocess
 __status__ = 'Production'
 __maintainer__ = 'Alejandro Jurnet'
 __email__ = 'ajurnet@ac.upc.edu'
-__version__ = '2.0.7'
+__version__ = '2.0.8'
 __author__ = 'Universitat Politècnica de Catalunya'
 
 # ### Global Variables ### #
