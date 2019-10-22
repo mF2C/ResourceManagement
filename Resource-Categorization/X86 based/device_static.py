@@ -7,6 +7,7 @@ import subprocess
 from os import getenv
 import docker
 import requests
+import xml.etree.ElementTree as ET
 
 docker_client1 = docker.from_env()
 
@@ -92,36 +93,47 @@ def static_info():
                 net_stat = json.dumps({"networkingStandards": 'WiFi'})
 
             else:
-                timeout = time.time() + 60 * 2
-                while True:
-                    ddisIP = ''
-                    try:
-                        with open('/vpninfo/vpnclient.status', mode='r') as json_file:
-                            json_txt = json_file.readlines()[0]
-                            ljson = json.loads(json_txt)
-                            if ljson['status'] == 'connected':
-                                ddisIP = str(ljson['ip'])
-                                print(
-                                    'VPN IP successfully parsed from JSON file at \'{}\'. Content: {} IP: {}'.format(
-                                        '/vpninfo/vpnclient.status',
-                                        str(ljson),
-                                        ddisIP))
-                            else:
-                                print('VPN JSON status != \'connected\': Content: {}'.format(str(ljson)))
-                    except OSError:
-                        print('VPN file cannot be open or found at \'{}\'.'.format('/vpninfo/vpnclient.status'))
-                    except (IndexError, KeyError):
-                        print('VPN error on parsing the IP.')
-                    except:
-                        print('VPN generic error.')
-                    if ddisIP != '' or time.time() > timeout:
-                        break
-                eta3 = 'Ethernet'
+                try:
+                    response_agent = requests.get("http://cimi:8201/api/agent",headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
+                    response_agent_json = response_agent.json()
+                    devIp = response_agent_json['device_ip']
+                    devagentIP = str(devIp)
+                except:
+                    devagentIP=""
+                if devagentIP is not None and devagentIP != '':
+                    devip = devagentIP
+                    eta3 = 'Ethernet'
+                    net_stat = json.dumps({"networkingStandards": eta3})
+                else:
+                    timeout = time.time() + 60 * 2
+                    while True:
+                        ddisIP = ''
+                        try:
+                            with open('/vpninfo/vpnclient.status', mode='r') as json_file:
+                                json_txt = json_file.readlines()[0]
+                                ljson = json.loads(json_txt)
+                                if ljson['status'] == 'connected':
+                                    ddisIP = str(ljson['ip'])
+                                    print('VPN IP successfully parsed from JSON file at \'{}\'. Content: {} IP: {}'.format('/vpninfo/vpnclient.status',str(ljson),ddisIP))
+                                else:
+                                    print('VPN JSON status != \'connected\': Content: {}'.format(str(ljson)))
+                        except OSError:
+                            print('VPN file cannot be open or found at \'{}\'.'.format('/vpninfo/vpnclient.status'))
+                        except (IndexError, KeyError):
+                            print('VPN error on parsing the IP.')
+                        except:
+                            print('VPN generic error.')
+                        if ddisIP != '' or time.time() > timeout:
+                            break
+                    eta3 = 'Ethernet'
 
-                net_stat = json.dumps({"networkingStandards": eta3})
+                    net_stat = json.dumps({"networkingStandards": eta3})
          except:
              eta3 = 'Null'
              net_stat = json.dumps({"networkingStandards": eta3})
+
+
+
 
 
          return net_stat
@@ -132,6 +144,9 @@ def static_info():
 
         if OS == 'Linux':
 
+            with open('/etc/hostname', mode = 'r') as file:
+                txt = file.readlines()[0]
+                host = str(txt)
             hwloc = subprocess.Popen("hwloc-ls --of xml", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             cpuinfo = subprocess.Popen("cat /proc/cpuinfo", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
@@ -139,6 +154,7 @@ def static_info():
 
             for line in hwloc.stdout.readlines():
                 hwloc_xml += line.decode()
+
 
             cpu_info = ""
             for line1 in cpuinfo.stdout.readlines():
@@ -173,6 +189,7 @@ def static_info():
 
     merged_dict_stat = {**A, **B, **C}
     jsonString_merged_static = json.dumps(merged_dict_stat)
+#    print("static:",jsonString_merged_static)
 
 
     return jsonString_merged_static
