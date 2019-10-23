@@ -96,11 +96,26 @@ def static_info():
                 try:
                     timeout = time.time() + 60 * 2
                     while True:
-                        ddisIP =''
-                        response_vpn = requests.get("http://localhost:1999/api/get_vpn_ip", verify=False)
-                        res_vpn = response_vpn.json()
-                        devvpnIP = res_vpn['ip']
-                        ddisIP = str(devvpnIP)
+                        ddisIP = ''
+                        try:
+                            with open('/vpninfo/vpnclient.status', mode='r') as json_file:
+                                json_txt = json_file.readlines()[0]
+                                ljson = json.loads(json_txt)
+                                if ljson['status'] == 'connected':
+                                    ddisIP = str(ljson['ip'])
+                                    print(
+                                    'VPN IP successfully parsed from JSON file at \'{}\'. Content: {} IP: {}'.format(
+                                        '/vpninfo/vpnclient.status',
+                                        str(ljson),
+                                        ddisIP))
+                                else:
+                                    print('VPN JSON status != \'connected\': Content: {}'.format(str(ljson)))
+                        except OSError:
+                            print('VPN file cannot be open or found at \'{}\'.'.format('/vpninfo/vpnclient.status'))
+                        except (IndexError, KeyError):
+                            print('VPN error on parsing the IP.')
+                        except:
+                            print('VPN generic error.')
                         if ddisIP !="" or time.time()>timeout:
                             break
                     net_stat = json.dumps({"networkingStandards": "Ethernet"})
