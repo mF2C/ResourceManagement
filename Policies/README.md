@@ -21,7 +21,25 @@ The policies module is responsible for:
 - Define the resilience and clustering policies.
 - Enforce the protection of the area (Leader and Backup).
 - Definition and Execution of the Leader Election Algorithm.
-- Orchestration of the Resource Management Block.
+- Orchestration of the Resource Manager Block.
+
+## Usage
+
+The Policies module can be run ussing the dockerized version or directly from source.
+
+#### Docker
+
+Last build version from docker hub: `docker run --rm mf2c/policies:<version>`
+
+Replace *<version>* with a valid uploaded version [here](https://cloud.docker.com/u/mf2c/repository/docker/mf2c/policies/tags).
+
+#### Source
+
+`Python 3.7.x` is required to execute this code.
+
+1. Clone the repository with Git. It's hightly recomended to create a Python virtual environment.
+2. Install all the library dependencies: `pip3 install -r requirements.txt`
+2. Execute the following command: `python3 main.py`
 
 
 ### Environment variables
@@ -46,6 +64,12 @@ To run policies module along other mF2C components, is necessary to specify the 
 - "isLeader=False"
 ```
 
+##### To deploy in Cloud
+
+```yaml
+- "isCloud=True"
+```
+
 ##### To specify static leader and device IPs:
 
 ```yaml
@@ -55,27 +79,11 @@ To run policies module along other mF2C components, is necessary to specify the 
 
 **NOTE**: Only used when Discovery cannot detect a nearby Leader. These variables should only be used for testing purposes and internal mF2C procedures may fail if they are modified.
 
+##### To specify the address of the Cloud Agent (Ignored if deployed as Cloud Agent)
 
-### Leader Election
-
-The Leader Election process is defined by **four** policies that can be activated at different instants of time. We group them into two groups depending on the state of the agent:
-
-- On startup
-    - Passive Leader Promotion (PLP)
-    - Automatic Leader Promotion (ALP)
-- On running
-    - On failure: Leader Protection (LP)
-    - On reelection: Leader Reelection (LR)
-    
-##### Passive Leader Promotion (PLP)
-
-The agent is manually set to start as a Leader, using the environment variable `isLeader` set to `True`. By default, an agent starts as a normal agent.
-
-##### Automatic Leader Election (ALP)
-
-If the *PLP* result on a non-leader state, the agent starts to scan for nearby leaders in the location. If no leader is found given a period defined by policy, the *ALP* starts the agent as a Leader **IF** the agent is capable. The capability of an agent to be a leader is defined by the Leader Election Algorithm. 
-
-##### Leader Protection (LP)
+```yaml
+- "MF2C_CLOUD_AGENT=172.0.0.1"
+``` 
 
 Once the leader is setup and running, the Area Resilience submodule starts looking for an agent to become the backup. The backup checks if the leader is running correctly using the Keepalive Protocol defined in the module. Either the Leader or the Backup are protected, meaning that if the Leader fails, the backup takes its place or if the backup fails, the leader elects a new one when it's possible. The election is performed using the Leader Election Algorithm.
 
@@ -125,6 +133,52 @@ curl -X GET "http://localhost/rm/components" -H "accept: application/json"
     }
     ```
 
+#### Healthcheck
+
+Health of the Policies module. Policies only works properly under GREEN and YELLOW status codes.
+
+> **GREEN:** All components successfully triggered, IPs correctly setup, Backup elected (if Leader) and deviceID generated.
+>
+> **YELLOW:** Discovery failed or leader not found (only in agent side) but IPs correctly setup, Backup not elected (if Leader).
+>
+> **RED:** Component(s) trigger failed, IPs not set, deviceID not generated
+>
+> **ORANGE:** YELLOW or RED status, but still starting. 
+
+- **GET** /api/v2/resource-management/policies/healthcheck
+
+```bash
+curl -X GET "http://localhost//api/v2/resource-management/policies/healthcheck" -H "accept: application/json"
+```
+
+- **RESPONSES**
+    - **200** - Health OK GREEN or YELLOW
+    - **400** - Health NOK ORANGE or RED 
+    - **Response Payload:**
+    ```json
+        {
+        "health": true,                        // 'True if the component is considered to work properly (GREEN and YELLOW status).'),
+        "startup": true,                       // "True if the module has finished the agent startup flow."),
+        "startup_time": 40.0,                  // "Time considered as startup (ORANGE status when failure)"),
+        "status": "GREEN",                     // "Status code of the component. GREEN: all OK, YELLOW: failure detected but working, ORANGE: Failed but starting, RED: critical failure."),
+        "API": true,                           // "True if API working"),
+        "discovery": true,                     // "True if Discovery not failed on trigger"),
+        "identification": true,                // "True if Identification not failed on trigger"),
+        "cau-client":  true,                   // "True if CAU-client not failed on trigger"),
+        "res-cat": true,                       // "True if Res. Categorization not failed on trigger"),
+        "area-resilience": true,               // "True if sub-module Area Resilience started"),
+        "vpn-client": true,                    // "True if VPN is stablished and got IP"),
+        "deviceIP": true,                      // "True if deviceIP not empty"),
+        "leaderIP": true,                      // "True if leaderIP not empty or isCloud = True"),
+        "cloudIP": true,                       // "True if cloudIP not empty"),
+        "deviceID": true,                      // "True if deviceID not empty"),
+        "backupElected": true,                 // "True if (activeBackups > 0 and isLeader=True) or isCloud=True"),
+        "leaderfound": true,                   // "True if leader found by discovery or (isCloud = True || isLeader = True)"),
+        "JOIN-MYIP": true,                     // "True if joined and IP from discovery obtained or (isCloud = True || isLeader = True)"),
+        "wifi-iface": true                     // "True if wifi iface not empty or (isCloud = True)")
+        }
+    ```
+
 #### Keepalive
 
 Keepalive entrypoint for Leader. Backups send message to this address and check if the Leader is alive. Only registered backups are allowed to send keepalives, others will be rejected.
@@ -159,7 +213,8 @@ curl -X GET "http://localhost/api/v2/resource-management/policies/leaderinfo" -H
     - **200** - Success
     - **Response Payload:** `{
   "imLeader": false,
-  "imBackup": false
+  "imBackup": false,
+  "imCloud": false
 }`
 
 #### Reelection

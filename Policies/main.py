@@ -24,19 +24,20 @@ from leaderprotection.leaderreelection import LeaderReelection
 from flask import Flask, request
 from flask_restplus import Api, Resource, fields
 from threading import Thread
-from time import sleep
+from time import sleep, time
 import requests
 import subprocess
 
 __status__ = 'Production'
 __maintainer__ = 'Alejandro Jurnet'
 __email__ = 'ajurnet@ac.upc.edu'
-__version__ = '2.0.8'
+__version__ = '2.0.9'
 __author__ = 'Universitat Politècnica de Catalunya'
 
 # ### Global Variables ### #
 arearesilience = AreaResilience()
 agentstart = AgentStart()
+startup_time = time()
 
 # ### main.py code ### #
 # Set Logger
@@ -95,6 +96,28 @@ components_info_model = api.model('Resource Manager Components Information', {
     "cau_client_description": fields.String(description='CAUClient module description / parameters received')
 })
 
+health_model = api.model('Policies Healthcheck', {
+    "health": fields.Boolean(description='True if the component is considered to work properly (GREEN and YELLOW status).'),
+    "startup": fields.Boolean(description="True if the module has finished the agent startup flow."),
+    "startup_time": fields.Float(description="Time considered as startup (ORANGE status when failure)"),
+    "status": fields.String(description="Status code of the component. GREEN: all OK, YELLOW: failure detected but working, ORANGE: Failed but starting, RED: critical failure."),
+    "API": fields.Boolean(description="True if API working"),
+    "discovery": fields.Boolean(description="True if Discovery not failed on trigger"),
+    "identification": fields.Boolean(description="True if Identification not failed on trigger"),
+    "cau-client": fields.Boolean(description="True if CAU-client not failed on trigger"),
+    "res-cat": fields.Boolean(description="True if Res. Categorization not failed on trigger"),
+    "area-resilience": fields.Boolean(description="True if sub-module Area Resilience started"),
+    "vpn-client": fields.Boolean(description="True if VPN is stablished and got IP"),
+    "deviceIP": fields.Boolean(description="True if deviceIP not empty"),
+    "leaderIP": fields.Boolean(description="True if leaderIP not empty or isCloud = True"),
+    "cloudIP": fields.Boolean(description="True if cloudIP not empty"),
+    "deviceID": fields.Boolean(description="True if deviceID not empty"),
+    "backupElected": fields.Boolean(description="True if (activeBackups > 0 and isLeader=True) or isCloud=True"),
+    "leaderfound": fields.Boolean(description="True if leader found by discovery or (isCloud = True || isLeader = True)"),
+    "JOIN-MYIP": fields.Boolean(description="True if joined and IP from discovery obtained or (isCloud = True || isLeader = True)"),
+    "wifi-iface": fields.Boolean(description="True if wifi iface not empty or (isCloud = True)")
+})
+
 
 # API Endpoints
 # #### Resource Manager #### #
@@ -116,7 +139,6 @@ class ResourceManagerStatus(Resource):
             'categorization': not agentstart.categorization_failed if agentstart.categorization_failed is not None else False,
             'policies': not agentstart.policies_failed if agentstart.policies_failed is not None else False
         }
-        # if fcjp.isLeader:        # I'm a leader #TODO; Decide if there is any distinction if leader
         payload.update({'discovery_description': 'detectedLeaderID: \"{}\", MACaddr: \"{}\"'.format(
             agentstart.detectedLeaderID, agentstart.MACaddr) if payload.get(
             'discovery') else 'Discovery not started or error on trigger.'})
@@ -132,12 +154,69 @@ class ResourceManagerStatus(Resource):
             {'cau_client_description': 'authenticated: {}, secureConnection: {}'.format(agentstart.isAuthenticated,
                                                                                         agentstart.secureConnection) if payload.get(
                 'cau_client') else 'CAU_client not started or error on trigger.'})
-        # else:
-        #     payload.update({'discovery_description': '' if payload.get('discovery') else ''})
-        #     payload.update({'identification_description': '' if payload.get('identification') else ''})
-        #     payload.update({'categorization_description': '' if payload.get('categorization') else ''})
-        #     payload.update({'policies_description': '' if payload.get('policies') else ''})
         return payload, 200
+
+
+# Healthcheck
+@pl.route('/{}'.format(URLS.END_POLICIES_HEALTHCHECK))
+class policiesHealthcheck(Resource):
+    """Policies Healthcheck"""
+    @pl.doc('get-healthcheck')
+    @pl.marshal_with(health_model, code=200)
+    @pl.response(200, description="Health OK GREEN or YELLOW")
+    @pl.response(400, description="Health NOK ORANGE or RED")
+    def get(self):
+        """Policies Healthcheck"""
+        payload = {
+            'health': False,        # Needs change
+            'startup': agentstart.isCompleted,
+            'startup_time': CPARAMS.STARTUP_TIME_HEALTH,
+            'status': 'BLACK',      # Needs change
+            'API': True,
+            'discovery': not agentstart.discovery_failed if agentstart.discovery_failed is not None else False,
+            'identification': not agentstart.identification_failed if agentstart.identification_failed is not None else False,
+            'cau-client': not agentstart.cauclient_failed if agentstart.cauclient_failed is not None else False,
+            'res-cat': not agentstart.categorization_failed if agentstart.categorization_failed is not None else False,
+            'area-resilience': not agentstart.policies_failed if agentstart.policies_failed is not None else False,
+            'vpn-client': True if agentstart.vpnIP is not None and agentstart.vpnIP != '' else False,
+            'deviceIP': True if agentstart.deviceIP is not None and agentstart.deviceIP != '' else False,
+            'leaderIP': True if (agentstart.leaderIP is not None and agentstart.leaderIP != '') or CPARAMS.CLOUD_FLAG else False,
+            'cloudIP': True if (agentstart.cloudIP is not None and agentstart.cloudIP != '') or CPARAMS.CLOUD_FLAG else False,
+            'deviceID': True if agentstart.deviceID is not None and agentstart.deviceID != '' else False,
+            'backupElected': True if arearesilience.getAmountActiveBackups() > 0 or not agentstart.imLeader or agentstart.imCloud else False,
+            'leaderfound': True if (agentstart.bssid is not None and agentstart.bssid != '') or agentstart.imLeader or agentstart.imCloud else False,
+            'JOIN-MYIP': True if (agentstart.discovery_joined is not None and agentstart.discovery_joined) or agentstart.imCloud or agentstart.imLeader else False,
+            'wifi-iface': True if CPARAMS.WIFI_DEV_FLAG != '' or CPARAMS.CLOUD_FLAG else False
+        }
+        components = payload['identification'] and payload['discovery'] and payload['cau-client'] and payload['res-cat'] and payload['area-resilience'] and payload['vpn-client']
+        components_no_discovery = payload['identification'] and payload['cau-client'] and payload['res-cat'] and payload['area-resilience'] and payload['vpn-client']
+        ips = payload['deviceIP'] and payload['leaderIP'] and payload['cloudIP']
+        discovery_fail_ip_ok = not payload['discovery'] and payload['deviceIP'] and payload['leaderIP']
+        discovery_ok_leader_notfound_vpn_ok = payload['discovery'] and not payload['leaderfound'] and payload['vpn-client'] and payload['deviceIP'] and payload['leaderIP']
+
+        # GREEN STATUS EVALUATION
+        if not components_no_discovery or not ips or not payload['deviceID']:
+            if time() - startup_time < payload['startup_time']:
+                payload['status'] = 'ORANGE'
+            else:
+                payload['status'] = 'RED'
+            payload['health'] = False
+        elif discovery_fail_ip_ok or discovery_ok_leader_notfound_vpn_ok or not payload['backupElected'] or not payload['startup']:
+            if time() - startup_time < payload['startup_time']:
+                payload['status'] = 'ORANGE'
+                payload['health'] = False
+            else:
+                payload['status'] = 'YELLOW'
+                payload['health'] = True
+        elif components and ips and payload['backupElected'] and payload['deviceID'] and payload['startup']:
+            payload['status'] = 'GREEN'
+            payload['health'] = True
+        else:
+            payload['status'] = 'YELLOW'
+            payload['health'] = True
+        LOG.info('Policies Health={} Status={} Started={} Components={} IPs={} ID={}'.format(payload['health'],payload['status'],payload['startup'],components, ips, payload['deviceID']))
+        status_code = 200 if payload['health'] else 400
+        return payload, status_code
 
 
 # #### Policies Module #### #
