@@ -93,13 +93,18 @@ def static_info():
                 net_stat = json.dumps({"networkingStandards": 'WiFi'})
 
             else:
-                try:
-                    response_agent = requests.get("http://cimi:8201/api/agent",headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
-                    response_agent_json = response_agent.json()
-                    devIp = response_agent_json['device_ip']
-                    devagentIP = str(devIp)
-                except:
-                    devagentIP=""
+                timeout1 = time.time() + 60*2
+                while True:
+                    devagentIP = ''
+                    try:
+                        response_agent = requests.get("http://cimi:8201/api/agent",headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
+                        response_agent_json = response_agent.json()
+                        devIp = response_agent_json['device_ip']
+                        devagentIP = str(devIp)
+                    except:
+                        print("agent IP not retrieve yet!!!")
+                    if devagentIP!='' or time.time() > timeout1:
+                        break
                 if devagentIP is not None and devagentIP != '':
                     devip = devagentIP
                     eta3 = 'Ethernet'
