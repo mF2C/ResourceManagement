@@ -116,16 +116,17 @@ class Main():
         staticinfo = json.loads(stat)
         devStatic= {**devID, **staticinfo, **isleader1}
         jsonString_merged_static = devStatic
-        print("Device information for normal agent: ", jsonString_merged_static)
+        print("Device information for micro agent: ", jsonString_merged_static)
 
         try:
             r = requests.post("{}/api/device".format(self.cimi_endpoint), headers={"slipstream-authn-info": "internal ADMIN"}, json=jsonString_merged_static, verify=False)
-            print("Posting device resource info for normal-agent: ", r, r.request, r.reason, r.json())
+            print("Posting device resource info for micro-agent: ", r, r.request, r.reason, r.json())
+
 
             #capturing the corresponding cimi resource-id
             self.deviceID_cimiresource = r.json()['resource-id']
             r1 = requests.get("{}/api/device".format(self.cimi_endpoint), headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
-            print("Response to see posted device resource info for normal-agent: ", r1, r1.request, r1.reason, r1.json())
+            print("Response to see posted device resource info for micro-agent: ", r1, r1.request, r1.reason, r1.json())
 
         except Exception as e:
             print (e)
@@ -141,11 +142,10 @@ class Main():
         global jsonString_merged_dynamic
         while self.deviceID_cimiresource is None:
             t.sleep(0.1)
-        ## TODO:- need to add some lines of code and also change some code in order to add the CIMI provided reosurce-id and leaderID ##
         devID = {"device": {'href': str(self.deviceID_cimiresource)}}
         target_deviceSensor = getenv('targetDeviceSensor')
         if target_deviceSensor == 'B':
-            sensors ={
+            sensors = {
                 "sensors": [
                     {
                         "sensorType": "[\"acceleration\", \"satelliteCount\", \"voltage\", \"battery\", \"inclination\", \"proximity\", \"bearing\", \"velocity\", \"current\", \"waterLevel\", \"temperature\", \"humidity\", \"pressure\", \"latitude\", \"longitude\"]",
@@ -170,7 +170,7 @@ class Main():
             sensormodel = None
             sensorconnection = None
             sensors = {"sensors": [{'sensorType': str(sensortype), 'sensorModel': str(sensormodel),
-                                'sensorConnection': str(sensorconnection)}]}
+                                    'sensorConnection': str(sensorconnection)}]}
 
         statusinfo = {"status": str(self.status)}
 
@@ -180,23 +180,23 @@ class Main():
             print("dyna: ", dyna)
             dynamicinfo = json.loads(dyna)
             wifi_ip = dynamicinfo['wifiAddress']
-            if wifi_ip=="Null":
+            if wifi_ip == "Null":
                 print("IP Address is not retrieve yet!!!")
             else:
                 devDynamic = {**devID, **dynamicinfo, **sensors, **statusinfo}
                 jsonString_merged_dynamic = devDynamic
-                print("Device-Dynamic information for normal agent: ", jsonString_merged_dynamic)
+                print("Device-Dynamic information for Micro Agent: ", jsonString_merged_dynamic)
                 try:
                     if self.deviceDynamicID_cimiresource is None:
                         r2 = requests.post("{}/api/device-dynamic".format(self.cimi_endpoint),
                                            headers={"slipstream-authn-info": "internal ADMIN"},
                                            json=jsonString_merged_dynamic, verify=False)
-                        print("Posting device-dynamic resource info for normal-agent: ", r2, r2.request, r2.reason,
+                        print("Posting device-dynamic resource info for micro-agent: ", r2, r2.request, r2.reason,
                               r2.json())
                         self.deviceDynamicID_cimiresource = r2.json()['resource-id']
                         r3 = requests.get("{}/api/device-dynamic".format(self.cimi_endpoint),
                                           headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
-                        print("Response to see posted device-dynamic resource info for normal-agent: ", r3, r3.request,
+                        print("Response to see posted device-dynamic resource info for micro-agent: ", r3, r3.request,
                               r3.reason, r3.json())
                     else:
                         cimiResourceID = {"resource-id": self.deviceDynamicID_cimiresource}
@@ -205,11 +205,11 @@ class Main():
                         r4 = requests.put("{}/api/device-dynamic".format(self.cimi_endpoint),
                                           headers={"slipstream-authn-info": "internal ADMIN"},
                                           json=jsonString_merged_dynamic, verify=False)
-                        print("Updating device-dynamic resource info for normal-agent: ", r4, r4.request, r4.reason,
+                        print("Updating device-dynamic resource info for micro-agent: ", r4, r4.request, r4.reason,
                               r4.json())
                         r5 = requests.get("{}/api/device-dynamic".format(self.cimi_endpoint),
                                           headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
-                        print("Response to see updated device-dynamic resource info for normal-agent: ", r5, r5.request,
+                        print("Response to see updated device-dynamic resource info for micro-agent: ", r5, r5.request,
                               r5.reason, r5.json())
                 except ConnectionError as e:
                     print(e)
@@ -223,6 +223,7 @@ class Main():
 
     def agentresource(self):
         global agresid, end_url_point, wifi_address_NIC, ethe_address_NIC, devIP, devips
+        devip=''
         while self.deviceID_cimiresource is None:
             t.sleep(0.1)
         deviceID = self.userID
@@ -244,8 +245,11 @@ class Main():
                 running_discovery_containers = []
                 for container in running_containers:
                     container_im = container.attrs['Config']['Image']
-                    if "discovery" in container_im:
-                        running_discovery_containers.append(container)
+                    try:
+                        if "discovery" in container_im:
+                            running_discovery_containers.append(container)
+                    except:
+                        running_discovery_containers=[]
 
                 if len(running_discovery_containers) == 1:
                     disc_cont_id = running_discovery_containers[0]
@@ -259,8 +263,20 @@ class Main():
                             devip = "None"
                     except:
                         devip = "None"
+                    agentResource1_info = {"device_id": MyleaderID, "device_ip": devip, "leader_id": dID, "leader_ip": leddevip,"authenticated": authenticated, "connected": connect, "isLeader": isleader,"backup_ip": backupip, "childrenIPs": childip}
+                    agentResource_info = {"device_id": deviceID, "device_ip": devip}
+                    agentRes1_info = json.dumps(agentResource1_info)
+                    agentRes_info = json.dumps(agentResource_info)
 
-
+                else:
+                    timeout = t.time() + 60 * 2
+                    while True:
+                        response_vpn = requests.get("http://localhost:1999/api/get_vpn_ip", verify=False)
+                        res_vpn = response_vpn.json()
+                        devvpnIP = res_vpn['ip']
+                        devip = str(devvpnIP)
+                        if devip != '' or t.time() > timeout:
+                            break
                     agentResource1_info = {"device_id": MyleaderID, "device_ip": devip, "leader_id": dID, "leader_ip": leddevip,"authenticated": authenticated, "connected": connect, "isLeader": isleader,"backup_ip": backupip, "childrenIPs": childip}
                     agentResource_info = {"device_id": deviceID, "device_ip": devip}
                     agentRes1_info = json.dumps(agentResource1_info)
@@ -421,6 +437,7 @@ class Main():
     def agentresourceLeader(self):
         global agresid, end_url_point, wifi_address_NIC, ethe_address_NIC
         childip = []
+        devip =''
         while self.deviceID_cimiresource is None:
             t.sleep(0.1)
         deviceID = self.userID
@@ -434,8 +451,11 @@ class Main():
                 running_discovery_containers = []
                 for container in running_containers:
                     container_im = container.attrs['Config']['Image']
-                    if "discovery" in container_im:
-                        running_discovery_containers.append(container)
+                    try:
+                        if "discovery" in container_im:
+                            running_discovery_containers.append(container)
+                    except:
+                        running_discovery_containers = []
 
                 if len(running_discovery_containers) == 1:
                     disc_cont_id = running_discovery_containers[0]
@@ -467,6 +487,36 @@ class Main():
                     agentResource_info = {"device_id": dID, "device_ip": devip, "leader_id": MyleaderID, "backup_ip": backupip, "childrenIPs": childip}
                     agentRes_info = json.dumps(agentResource_info)
                     agentRes1_info = json.dumps(agentResource1_info)
+
+                else:
+                    timeout = t.time() + 60 * 2
+                    while True:
+                        response_vpn = requests.get("http://localhost:1999/api/get_vpn_ip", verify=False)
+                        res_vpn = response_vpn.json()
+                        devvpnIP = res_vpn['ip']
+                        devip = str(devvpnIP)
+                        if devip != '' or t.time() > timeout:
+                            break
+
+                    r22 = requests.get("{}/api/device-dynamic".format(self.cimi_endpoint),headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
+
+                    dynamics_info = r22.json()
+                    rs_info = dynamics_info['deviceDynamics']
+                    ips1 = [item['wifiAddress'] for item in rs_info]
+
+                    childip = [y for y in ips1 if y!= None and y!= "192.168.7.1"]
+
+                    backupip = ""
+                    authenticated = True
+                    connect = True
+                    isleader = True
+
+
+                    agentResource1_info = {"device_id": dID, "device_ip": devip, "leader_id": dID, "leader_ip": devip, "authenticated": authenticated, "connected": connect, "isLeader": isleader, "backup_ip": backupip, "childrenIPs": childip}
+                    agentResource_info = {"device_id": dID, "device_ip": devip, "leader_id": MyleaderID, "backup_ip": backupip, "childrenIPs": childip}
+                    agentRes_info = json.dumps(agentResource_info)
+                    agentRes1_info = json.dumps(agentResource1_info)
+
 
                     if agentResource_info['device_ip'] is "Null" and agentResource1_info['device_ip'] is "Null":
                         print("Device IP is not retrieve yet!!!")
@@ -501,8 +551,6 @@ class Main():
 
                         except ConnectionError as e:
                             print("Agent resource is not yet created!!! Wait for few times")
-                else:
-                    print("Device IP is not retrieved yet!!!")
             except:
                 print("Leader's Device IP is not retrieved yet!!!")
 
