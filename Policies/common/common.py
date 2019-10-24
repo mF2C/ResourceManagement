@@ -43,6 +43,10 @@ class common_params:
         self.CLOUD_FLAG = bool(environ.get('isCloud', default='False') == 'True')
         self.CLOUD_AGENT_IP = environ.get('MF2C_CLOUD_AGENT', default=None)
         try:
+            self.REGISTRATION_MAX_RETRY = int(environ.get('REGISTRATION_MAX_RETRY', default=25))
+        except ValueError:
+            self.REGISTRATION_MAX_RETRY = 20
+        try:
             self.STARTUP_TIME_HEALTH = float(environ.get('HEALTH_STARTUP', default=60.))
         except ValueError:
             self.STARTUP_TIME_HEALTH = 60.
@@ -66,7 +70,8 @@ class common_params:
             'DEVICEID'                  : self.DEVICEID_FLAG,
             'isCloud'                   : self.CLOUD_FLAG,
             'CLOUD_AGENT_IP'            : self.CLOUD_AGENT_IP,
-            'HEALTH_STARTUP'            : self.STARTUP_TIME_HEALTH
+            'HEALTH_STARTUP'            : self.STARTUP_TIME_HEALTH,
+            'REGISTRATION_MAX_RETRY'    : self.REGISTRATION_MAX_RETRY
         }
 
     def get_all(self):
