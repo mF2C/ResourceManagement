@@ -31,7 +31,7 @@ import subprocess
 __status__ = 'Production'
 __maintainer__ = 'Alejandro Jurnet'
 __email__ = 'ajurnet@ac.upc.edu'
-__version__ = '2.0.9'
+__version__ = '2.0.10'
 __author__ = 'Universitat Politècnica de Catalunya'
 
 # ### Global Variables ### #
@@ -499,14 +499,26 @@ def main():
 
 def debug():
     sleep(10)
-    LOG.info('Early start of Identification procedure...')
+    LOG.info('Device registration procedure...')
     attempt = 0
     successful = False
-    while attempt < 100 and not successful:      # TODO: Param
+    while attempt < CPARAMS.REGISTRATION_MAX_RETRY and not successful:
         try:
-            r = requests.post(URLS.build_url_address(URLS.URL_IDENTIFICATION_START, portaddr=('identification', '46060')))   # TODO: Dynamic address
-            LOG.debug('Identification request result: {}'.format(r.json()))
-            successful = True
+            r = requests.post(URLS.build_url_address(URLS.URL_IDENTIFICATION_START, portaddr=('identification', '46060')))
+            rjson = r.json()
+            LOG.debug('Identification request result: {}'.format(rjson))
+            if rjson['status'] == '412' and CPARAMS.CLOUD_FLAG:
+                # We need to wait until user and password is registered
+                LOG.warning('Cloud user not registered yet... Retry in 10s.')
+            elif rjson['status'] in ('200', '201'):
+                LOG.info('Successful registration of the device.')
+                successful = True
+            elif CPARAMS.DEBUG_FLAG:
+                LOG.warning('Status code received different from 200 or 201. Debug mode skips this failure.')
+                successful = True
+            else:
+                LOG.warning('Error on registration trigger. Retry in 10s...')
+                successful = False
         except ValueError:
             LOG.debug('ValueError raised on Identification: {}'.format(r.text))
         except:
@@ -515,14 +527,16 @@ def debug():
             if not successful:
                 sleep(10)
             attempt += 1
-
+        if not CPARAMS.DEBUG_FLAG and not successful:
+            LOG.critical('Critical Error: Registration of the device not successful. Stopping module')
+            exit(4)
     sleep(5)
 
     LOG.info('Starting Agent Flow...')
     r = requests.get(URLS.build_url_address(URLS.URL_START_FLOW, portaddr=('127.0.0.1', CPARAMS.POLICIES_PORT)))
     # r = requests.get(URLS.build_url_address(URLS.URL_POLICIES, portaddr=('127.0.0.1', CPARAMS.POLICIES_PORT)))
     LOG.debug('Agent Flow request result: {}'.format(r.json()))
-    LOG.debug('Stoping thread activity.')
+    LOG.debug('Stopping thread activity.')
     return
 
 
