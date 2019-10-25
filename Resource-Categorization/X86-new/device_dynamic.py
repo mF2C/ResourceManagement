@@ -4,7 +4,6 @@ import json
 from os import getenv
 import docker
 
-
 docker_client = docker.from_env()
 
 
@@ -210,7 +209,5 @@ def dynamic_info():
     D = json.loads(d)
     z = {**C, **D}
     jsonString_merged_dynamic = json.dumps(z)
-    #print(z)
-    return jsonString_merged_dynamic
 
-#dynamic_info()
+    return jsonString_merged_dynamic

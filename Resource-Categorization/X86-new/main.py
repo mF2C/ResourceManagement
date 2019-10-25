@@ -43,7 +43,6 @@ class Main():
         self.agentresourceid = "agent"
         self.status = "connected"
 
-
     ##Start the program##
 
     def start(self, userid, leaderid, isleader):
@@ -78,7 +77,6 @@ class Main():
 
             self.thread_dyn = threading.Thread(target=self.dynamic, daemon=True, name='dyn')
             self.thread_dyn.start()
-
 
             ## Threads for the Leader-side
         else:
@@ -173,13 +171,14 @@ class Main():
             while True:
                 devagentIP = ''
                 try:
-                    response_agent = requests.get("http://cimi:8201/api/agent",headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
+                    response_agent = requests.get("http://cimi:8201/api/agent",
+                                                  headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
                     response_agent_json = response_agent.json()
                     newDict = {}
                     for item in response_agent_json['agents']:
                         newDict.update(item)
                     response_agent_json['agents'] = newDict
-                    devIp =response_agent_json['agents']['device_ip']
+                    devIp = response_agent_json['agents']['device_ip']
                     devagentIP = str(devIp)
                 except:
                     print("agent IP not retrieve yet!!!")
@@ -224,7 +223,6 @@ class Main():
                     print(r)
                 if switch_flag:
                     break
-
 
     ## Leader Static Information sending to the CIMI+Dataclay for storing ##
 
@@ -303,13 +301,14 @@ class Main():
             while True:
                 devagentIP = ''
                 try:
-                    response_agent = requests.get("http://cimi:8201/api/agent",headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
+                    response_agent = requests.get("http://cimi:8201/api/agent",
+                                                  headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
                     response_agent_json = response_agent.json()
                     newDict = {}
                     for item in response_agent_json['agents']:
                         newDict.update(item)
                     response_agent_json['agents'] = newDict
-                    devIp =response_agent_json['agents']['device_ip']
+                    devIp = response_agent_json['agents']['device_ip']
                     devagentIP = str(devIp)
                 except:
                     print("agent IP not retrieve yet!!!")
@@ -352,7 +351,6 @@ class Main():
                     print(e)
                     r = "No response"
                     print(r)
-
 
     ## Leader-side agent-resource Information sending to the CIMI+Dataclay for storing ##
 
@@ -423,7 +421,27 @@ class Main():
                 rs_info = dynamics_info['deviceDynamics']
                 ips1 = [item['wifiAddress'] for item in rs_info]
 
-                childip = [y for y in ips1 if y is not None and y != "192.168.7.1"]
+                timeout2 = t.time() + 60 * 2
+                while True:
+                    devagentIP = ''
+                    try:
+                        response_agent = requests.get("http://cimi:8201/api/agent",
+                                                      headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
+                        response_agent_json = response_agent.json()
+                        newDict = {}
+                        for item in response_agent_json['agents']:
+                            newDict.update(item)
+                        response_agent_json['agents'] = newDict
+                        devIp = response_agent_json['agents']['device_ip']
+                        devagentIP = str(devIp)
+                    except:
+                        print("agent IP not retrieve yet!!!")
+                    if devagentIP != '' or t.time() > timeout2:
+                        break
+                wifi_ip = devagentIP
+
+
+                childip = [y for y in ips1 if y is not None and y != "192.168.7.1" and y!= wifi_ip]
 
                 backupip = ""
                 authenticated = True
@@ -433,7 +451,8 @@ class Main():
                 agentResource1_info = {"device_id": dID, "device_ip": devip, "leader_id": dID, "leader_ip": devip,
                                        "authenticated": authenticated, "connected": connect, "isLeader": isleader,
                                        "backup_ip": backupip, "childrenIPs": childip}
-                agentResource_info = {"device_id": dID, "leader_id": MyleaderID, "backup_ip": backupip, "childrenIPs": childip}
+                agentResource_info = {"device_id": dID, "leader_id": MyleaderID, "backup_ip": backupip,
+                                      "childrenIPs": childip}
 
                 agentRes_info = json.dumps(agentResource_info)
                 agentRes1_info = json.dumps(agentResource1_info)
@@ -538,25 +557,26 @@ class Main():
                     else:
                         pass
 
-                r99 = requests.get("http://cimi:8201/api/device-dynamic",headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
+                r99 = requests.get("http://cimi:8201/api/device-dynamic",
+                                   headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
                 dinfo = r99.json()
                 dd_info = dinfo['deviceDynamics']
 
-
-                #mdrs_info = rsmd_info
                 mdrs_info = dd_info
-
-                # dynamics_info['deviceDynamics'] = mdrs_info
-                # modifiedDynamic_info = dynamics_info
-                # mdDdyna = json.dumps(modifiedDynamic_info)
-                # # print("mdDdyna-info: ", mdrs_info)
 
                 res_info = [i for i in mdrs_info if (i['status'] != "unavailable" or i['status'] != "disconnected")]
 
-                ts = [item0['updated'] for item0 in res_info]
-                # print("total item: ", *ts)
-                deviceno = len(ts)
+                ts1 = [item0['status'] for item0 in res_info]
+                ts = [x1 for x1 in ts1 if 'connected' in x1]
+                tsm = [x2 for x2 in ts if 'disconnected' in x2]
 
+
+                da = len(ts)
+                dad= len(tsm)
+                if da > dad:
+                    deviceno = da - dad
+                else:
+                    deviceno = dad -da
                 physicalcores_set = [item5['physicalCores'] for item5 in ss_info]
                 logicalcores_set = [item6['logicalCores'] for item6 in ss_info]
 
@@ -720,13 +740,15 @@ class Main():
 # Calling the Main Class
 main = Main()
 
+
 # HeaclthCheck for res-cat
 @app.route('/api/v1/resource-management/categorization/run', methods=['GET'], strict_slashes=False)
 def run():
     return jsonify({'Res-cat running on 46070': True})
 
+
 # Starting point of the resource-categorization module
-@app.route('/api/v1/resource-management/categorization/start', methods=['GET','POST'], strict_slashes=False)
+@app.route('/api/v1/resource-management/categorization/start', methods=['GET', 'POST'], strict_slashes=False)
 def start():
     global example, isStarted, getje, userid, leaderid, isleader
     if isStarted:
@@ -751,17 +773,18 @@ def start():
     isStarted = True
     return jsonify({'started': True})
 
+
 # Switch the normal agent to leader agent
 @app.route('/api/v1/resource-management/categorization/leader-switch', methods=['GET', 'POST'],
-               strict_slashes=False)
+           strict_slashes=False)
 def switch():
-
     global switch_flag
     userid = request.json['deviceID']  ## Need to get the CIMI deviceID ##
     switch_flag = True
     isleader = True
     main.switch(userid, switch_flag, isleader)
     return jsonify({'started': True})
+
 
 # Application running on localhost and port='46070'
 app.run(host='0.0.0.0', port=46070)

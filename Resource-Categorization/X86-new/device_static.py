@@ -6,8 +6,6 @@ import cpuinfo
 import subprocess
 from os import getenv
 import docker
-import requests
-import xml.etree.ElementTree as ET
 
 docker_client1 = docker.from_env()
 
@@ -78,6 +76,7 @@ def static_info():
             with open('/etc/hostname', mode = 'r') as file:
                 txt = file.readlines()[0]
                 host = str(txt)
+                print(host)
             hwloc = subprocess.Popen("hwloc-ls --of xml", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             cpuinfo = subprocess.Popen("cat /proc/cpuinfo", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
@@ -85,6 +84,12 @@ def static_info():
 
             for line in hwloc.stdout.readlines():
                 hwloc_xml += line.decode()
+
+            lstring = hwloc_xml.split('IRILD039')
+            try:
+                hwloc_xml = lstring[0] + host + lstring[1]
+            except:
+                print('Error hostname')
 
 
             cpu_info = ""
@@ -120,9 +125,6 @@ def static_info():
 
     merged_dict_stat = {**A, **B, **C}
     jsonString_merged_static = json.dumps(merged_dict_stat)
-    #print("static:",jsonString_merged_static)
 
 
     return jsonString_merged_static
-
-#static_info()
