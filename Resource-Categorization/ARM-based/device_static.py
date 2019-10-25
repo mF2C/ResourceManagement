@@ -6,7 +6,6 @@ import cpuinfo
 import subprocess
 from os import getenv
 import docker
-import requests
 
 docker_client1 = docker.from_env()
 

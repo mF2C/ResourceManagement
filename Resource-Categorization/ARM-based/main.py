@@ -1,16 +1,13 @@
 from device_static import static_info
 from device_dynamic import dynamic_info
 from os import getenv
-import subprocess
 import threading
 import time as t
-import json,requests
+import json
 import urllib3
 from flask import Flask, jsonify, request
 from requests.exceptions import ConnectionError
 import requests
-#from requests.adapters import HTTPAdapter
-#from urllib3.util import Retry
 from datetime import datetime
 import docker
 docker_client2 = docker.from_env()
@@ -394,13 +391,7 @@ class Main():
                 dinfo = r99.json()
                 dd_info = dinfo['deviceDynamics']
 
-                # mdrs_info = rsmd_info
                 mdrs_info = dd_info
-
-                # dynamics_info['deviceDynamics'] = mdrs_info
-                # modifiedDynamic_info = dynamics_info
-                # mdDdyna = json.dumps(modifiedDynamic_info)
-                # # print("mdDdyna-info: ", mdrs_info)
 
                 res_info = [i for i in mdrs_info if (i['status'] != "unavailable" or i['status'] != "disconnected")]
 
@@ -408,7 +399,6 @@ class Main():
                 ts = [x1 for x1 in ts1 if 'connected' in x1]
                 tsm = [x2 for x2 in ts if 'disconnected' in x2]
 
-                # print("total item: ", *ts)
                 da = len(ts)
                 dad= len(tsm)
                 if da > dad:
@@ -606,17 +596,12 @@ def start():
 #Switch the normal agent to leader agent
 @app.route('/api/v1/resource-management/categorization/leader-switch', methods=['GET', 'POST'], strict_slashes=False)
 def switch():
-    # global example, isStarted
+
     global switch_flag
-    # if isStarted:
-    # return jsonify({'started':'It was started'})
     userid = request.json['deviceID'] ## Need to get the CIMI deviceID ##
-    # leaderid = request.json['detectedLeaderID']
     switch_flag = True
     isleader = True
-    # print('DEBUG', 'I\'m a leader {}'.format(isleader))
     main.switch(userid, switch_flag, isleader)
-    # isStarted = True
     return jsonify({'started': True})
 
 

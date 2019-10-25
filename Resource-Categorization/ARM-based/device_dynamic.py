@@ -1,14 +1,9 @@
-import subprocess
 import time
 import psutil
 import platform
 import json
 from os import getenv
 import docker
-import requests
-# import logging
-# from requests.adapters import HTTPAdapter
-# from urllib3.util import Retry
 docker_client = docker.from_env()
 
 
