@@ -229,6 +229,14 @@ class AreaResilience:
                 LOG.error('Agent not capable to be Backup/Leader')
             return False
 
+    def getAmountActiveBackups(self):
+        db = self.getBackupDatabase()
+        correct_backups = 0
+        for backup in db:
+            if backup.TTL >= 0:
+                correct_backups += 1
+        return correct_backups
+
     def __common_flow(self):
         self._connected = True
         if not self.__imLeader():

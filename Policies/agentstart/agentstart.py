@@ -3,9 +3,6 @@
 """
     RESOURCE MANAGEMENT - POLICIES MODULE
     Agent Start - Start an Agent 101
-
-    # TODO: LOG integration in triggers
-    # TODO: Reelection Integration
 """
 
 import threading
@@ -39,6 +36,7 @@ class AgentStart:
     def __init__(self, addr_dis=None, addr_id=None, addr_cat=None, addr_pol=None, addr_CAUcl=None, addr_dcly=None):
         self._connected = False
         self.isStarted = False
+        self.isCompleted = False
         self.isSwitched = False
         self.imLeader = False
         self.imCloud = False
@@ -66,6 +64,7 @@ class AgentStart:
 
         self.discovery_failed = None
         self.discovery_leader_failed = None
+        self.discovery_joined = None
         self.categorization_failed = None
         self.categorization_leader_failed = None
         self.identification_failed = None
@@ -87,6 +86,7 @@ class AgentStart:
         self.URL_CAU_CLIENT = URLS.build_url_address(URLS.URL_CAU_CLIENT, portaddr=addr_CAUcl)
         self.URL_POLICIES = URLS.build_url_address(URLS.URL_POLICIES, portaddr=addr_pol)
         self.URL_DISCOVERY_WATCH = URLS.build_url_address(URLS.URL_DISCOVERY_WATCH, portaddr=addr_dis)
+        self.URL_DISCOVERY_WATCH_LEADER = URLS.build_url_address(URLS.URL_DISCOVERY_WATCH_LEADER, portaddr=addr_dis)
 
     def start(self, imLeader, imCloud):
         if self.isStarted:
@@ -136,7 +136,7 @@ class AgentStart:
     def __agent_startup_flow(self):
         while self._connected:
             # 0. Init
-            self.detectedLeaderID, self.MACaddr = None, None
+            self.detectedLeaderID, self.MACaddr, self.bssid = None, None, None
 
             # 0.1 Check CIMI is UP
             CIMIon = False
@@ -211,11 +211,13 @@ class AgentStart:
                 try:
                     r = self.__trigger_joinDiscovery()
                     self.discovery_failed = not r
+                    self.discovery_joined = r
                     if not self.discovery_failed:
                         self.leaderIP = CPARAMS.LEADER_DISCOVERY_IP
                 except Exception:
                     LOG.exception(self.TAG + 'Discovery JOIN trigger failed.')
                     self.discovery_failed = True
+                    self.discovery_joined = False
                 LOG.debug(self.TAG + 'Discovery JOIN trigger Done.')
 
             # 4.3 If not detected or failed, static configuration if setup
@@ -345,6 +347,8 @@ class AgentStart:
             else:
                 return
 
+            self.isCompleted = True
+
             alive = True
             while self._connected and not self.discovery_failed and alive:
                 # 6 Check if discovery connection is alive
@@ -372,6 +376,7 @@ class AgentStart:
         # 1. Start sending beacons
         if self._connected:
             self.discovery_leader_failed = True
+            self.discovery_failed = True
             LOG.debug(self.TAG + 'Sending Broadcast trigger to discovery...')
             try:
                 r = self.__trigger_switch_discovery()
@@ -470,15 +475,12 @@ class AgentStart:
         if self._connected and not self.discovery_failed:
             LOG.debug(self.TAG + 'Start Discovery Leader Watch...')
             try:
-                self.__trigger_startDiscoveryWatch()
+                self.__trigger_startDiscoveryWatchLeader()
             except Exception:
                 LOG.exception(self.TAG + 'Watch Discovery Start Fail.')
             LOG.info(self.TAG + 'Watch Discovery Start Trigger Done.')
         elif self.discovery_failed:
             LOG.warning(self.TAG + 'Discovery Watch cancelled due Discovery Trigger failed')
-
-        # Print summary
-        self.__print_summary()
 
         # Create/Modify Agent Resource
         # IF static IP configuration setup
@@ -491,6 +493,9 @@ class AgentStart:
 
         LOG.info(self.TAG + 'deviceIP={}, leaderIP={}'.format(self.deviceIP, self.leaderIP))
 
+        # Print summary
+        self.__print_summary()
+
         self._cimi_agent_resource = AgentResource(self.deviceID, self.deviceIP, True,
                                                   True, self.imLeader, leaderIP=self.leaderIP)
         # deprecated: real values of Auth and Conn (as now are None in the Leader)
@@ -502,6 +507,7 @@ class AgentStart:
             status = CIMI.modify_resource(self._cimi_agent_resource_id, self._cimi_agent_resource.getCIMIdicc())
 
         # 6. Finish
+        self.isCompleted = True
         return
 
     def __cloud_flow(self):
@@ -551,16 +557,22 @@ class AgentStart:
             LOG.info(self.TAG + 'VPN IP: [{}]'.format(self.vpnIP))
 
         # 4. Switch leader categorization (or start if not started)
-        if self.categorization_started:
-            self.categorization_leader_failed = True
-            # Switch!
-            LOG.debug(self.TAG + 'Sending switch trigger to Categorization...')
+        if self._connected and not self.categorization_started:
+            self.categorization_failed = True
+            LOG.debug(self.TAG + 'Sending start trigger to Categorization...')
             try:
-                self.__trigger_switch_categorization()
-                self.categorization_leader_failed = False
+                self.__trigger_startCategorization()
+                self.categorization_failed = False
+                self.categorization_started = True
             except Exception:
-                LOG.exception(self.TAG + 'Categorization switch to leader failed')
-            LOG.info(self.TAG + 'Categorization Switch Trigger Done.')
+                LOG.exception(self.TAG + 'Categorization failed')
+                self.categorization_failed = True
+            LOG.info(self.TAG + 'Categorization Start Trigger Done.')
+        elif not self._connected:
+            return
+        if not CPARAMS.DEBUG_FLAG and self.categorization_failed:
+            LOG.critical(self.TAG + 'Categorization failed, interrupting agent start.')
+            return
 
         # 5. Area Resilience
         LOG.debug(self.TAG + 'Area Resilience trigger ignored in Cloud flow.')
@@ -570,7 +582,7 @@ class AgentStart:
         self.__print_summary()
 
         # Create Agent Resource
-        self.deviceIP = self.cloudIP
+        self.deviceIP = self.vpnIP
         self.leaderIP = None
         self._cimi_agent_resource = AgentResource(self.deviceID, self.deviceIP, True,
                                                   True, self.imLeader)
@@ -586,6 +598,9 @@ class AgentStart:
         else:
             # Agent resource already exists
             status = CIMI.modify_resource(self._cimi_agent_resource_id, self._cimi_agent_resource.getCIMIdicc())
+
+        self.isCompleted = True
+        return
 
 
     def __agent_switch_flow(self):
@@ -783,3 +798,8 @@ class AgentStart:
         r = requests.get(self.URL_DISCOVERY_WATCH, json=payload)
         rjson = r.json()
         print(self.TAG, 'Discovery: {}'.format(rjson))
+
+    def __trigger_startDiscoveryWatchLeader(self):
+        r = requests.get(self.URL_DISCOVERY_WATCH_LEADER)
+        rjson = r.json()
+        LOG.info(self.TAG + 'Discovery: {}'.format(rjson))

@@ -42,26 +42,36 @@ class common_params:
         self.DEVICEID_FLAG = str(environ.get('DEVICEID', default='agent/1234'))     # TODO: Remove this
         self.CLOUD_FLAG = bool(environ.get('isCloud', default='False') == 'True')
         self.CLOUD_AGENT_IP = environ.get('MF2C_CLOUD_AGENT', default=None)
+        try:
+            self.REGISTRATION_MAX_RETRY = int(environ.get('REGISTRATION_MAX_RETRY', default=25))
+        except ValueError:
+            self.REGISTRATION_MAX_RETRY = 20
+        try:
+            self.STARTUP_TIME_HEALTH = float(environ.get('HEALTH_STARTUP', default=60.))
+        except ValueError:
+            self.STARTUP_TIME_HEALTH = 60.
 
         self.__dicc = {
-            'LEADER_FLAG'       : self.LEADER_FLAG,
-            'LEADER_IP_FLAG'    : self.LEADER_IP_FLAG,
-            'DEVICE_IP_FLAG'    : self.DEVICE_IP_FLAG,
-            'TOPOLOGY_FLAG'     : self.TOPOLOGY_FLAG,
-            'DEBUG_FLAG'        : self.DEBUG_FLAG,
-            'MF2C_FLAG'         : self.MF2C_FLAG,
-            'WIFI_DEV_FLAG'     : self.WIFI_DEV_FLAG,
-            'CIMI_URL'          : self.CIMI_URL,
-            'CIMI_HEADER'       : self.CIMI_HEADER,
-            'CAU_CLIENT_ADDR'   : self.CAU_CLIENT_ADDR,
-            'WIFI_CONFIG_FILE'  : self.WIFI_CONFIG_FILE,
-            'TIME_WAIT_ALIVE'   : self.TIME_WAIT_ALIVE,
-            'POLICIES_PORT'     : self.POLICIES_PORT,
+            'isLeader'                  : self.LEADER_FLAG,
+            'leaderIP'                  : self.LEADER_IP_FLAG,
+            'deviceIP'                  : self.DEVICE_IP_FLAG,
+            'TOPOLOGY'                  : self.TOPOLOGY_FLAG,
+            'DEBUG'                     : self.DEBUG_FLAG,
+            'MF2C'                      : self.MF2C_FLAG,
+            'WIFI_DEV_FLAG'             : self.WIFI_DEV_FLAG,
+            'CIMI_URL'                  : self.CIMI_URL,
+            'CIMI_HEADER'               : self.CIMI_HEADER,
+            'CAU_CLIENT_ADDR'           : self.CAU_CLIENT_ADDR,
+            'WIFI_CONFIG_FILE'          : self.WIFI_CONFIG_FILE,
+            'TIME_WAIT_ALIVE'           : self.TIME_WAIT_ALIVE,
+            'POLICIES_PORT'             : self.POLICIES_PORT,
             'POLICIES_INTERNAL_PORT'    : self.POLICIES_INTERNAL_PORT,
             'POLICIES_EXTERNAL_PORT'    : self.POLICIES_EXTERNAL_PORT,
-            'DEVICEID_FLAG'     : self.DEVICEID_FLAG,
-            'CLOUD_FLAG'                : self.CLOUD_FLAG,
-            'CLOUD_AGENT_IP'            : self.CLOUD_AGENT_IP
+            'DEVICEID'                  : self.DEVICEID_FLAG,
+            'isCloud'                   : self.CLOUD_FLAG,
+            'CLOUD_AGENT_IP'            : self.CLOUD_AGENT_IP,
+            'HEALTH_STARTUP'            : self.STARTUP_TIME_HEALTH,
+            'REGISTRATION_MAX_RETRY'    : self.REGISTRATION_MAX_RETRY
         }
 
     def get_all(self):
@@ -80,6 +90,7 @@ class ModuleURLs:
     URL_DISCOVERY_MAC = '/api/v1/resource-management/discovery/mac/'  # Deprecated
     URL_DISCOVERY_SWITCH_LEADER = '/api/v1/resource-management/discovery/broadcast/'
     URL_DISCOVERY_WATCH = '/api/v1/resource-management/discovery/watch_agent_side/'
+    URL_DISCOVERY_WATCH_LEADER = '/api/v1/resource-management/discovery/watch/'
     URL_DISCOVERY_DHCP = '/api/v1/resource-management/discovery/dhcp/'
     URL_DISCOVERY_MYIP = '/api/v1/resource-management/discovery/my_ip/'
     URL_DISCOVERY_JOIN = '/api/v1/resource-management/discovery/join/'
@@ -101,6 +112,7 @@ class ModuleURLs:
     URL_POLICIES_KEEPALIVE = '{}{}/'.format(__POLICIES_BASE_URL, END_POLICIES_KEEPALIVE)
 
     URL_POLICIES_RMSTATUS = '/rm/components/'
+    END_POLICIES_HEALTHCHECK = 'healthcheck'
 
     DEFAULT_ADDR = '127.0.0.1'
     DEFAULT_PORT = '60451'
