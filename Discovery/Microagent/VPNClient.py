@@ -6,7 +6,9 @@ VPNCLIENTCONFIG = {
     "network_mode":"host",
     "extra_hosts":{'vpnserver':'213.205.14.13'},
     "cap_add": ["NET_ADMIN"],
-    "volumes":{'pkidata': {'bind': '/pkidata', 'mode': 'rw'}},
+    "volumes":{'pkidata': {'bind': '/pkidata', 'mode': 'rw'},
+               'vpninfo': {'bind': '/vpninfo', 'mode': 'rw'}},
+    "name":"mf2c_micro_vpnclient",
     "labels":{"mf2c.component":"True","mf2c.agent.type":"microagent"}
     }
 
@@ -69,6 +71,7 @@ def connect_to_vpn():
                                       cap_add = VPNCLIENTCONFIG["cap_add"],
                                       volumes=VPNCLIENTCONFIG["volumes"],
                                       labels=VPNCLIENTCONFIG["labels"],
+                                      name=VPNCLIENTCONFIG["name"],
                                       detach=True)
                 for line in container.logs(stream=True):
                     print ("[VPN Client] "+line.strip().decode("utf-8"))
