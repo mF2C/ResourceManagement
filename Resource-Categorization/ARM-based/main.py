@@ -67,13 +67,6 @@ class Main():
         self.thread_module.start()
 
 
-##Sensor information passing##
-
-    # def sensor(self, sensortype, sensormodel, sensorconnection):
-    #     self.sensorType = sensortype
-    #     self.sensorModel = sensormodel
-    #     self.sensorConnection = sensorconnection
-
 ##Threading Module is starting##
 
     def th_module(self):
@@ -397,16 +390,31 @@ class Main():
                     else:
                         pass
 
-                mdrs_info = rsmd_info
+                r99 = requests.get("{}/api/device-dynamic".format(self.cimi_endpoint),headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
+                dinfo = r99.json()
+                dd_info = dinfo['deviceDynamics']
 
-                dynamics_info['deviceDynamics'] = mdrs_info
-                modifiedDynamic_info = dynamics_info
-                mdDdyna = json.dumps(modifiedDynamic_info)
+                # mdrs_info = rsmd_info
+                mdrs_info = dd_info
 
-                res_info = [i for i in mdrs_info if not (i['status'] == "unavailable" or i['status'] == "disconnected")]
+                # dynamics_info['deviceDynamics'] = mdrs_info
+                # modifiedDynamic_info = dynamics_info
+                # mdDdyna = json.dumps(modifiedDynamic_info)
+                # # print("mdDdyna-info: ", mdrs_info)
 
-                ts = [item0['updated'] for item0 in res_info]
-                deviceno = len(ts)
+                res_info = [i for i in mdrs_info if (i['status'] != "unavailable" or i['status'] != "disconnected")]
+
+                ts1 = [item0['status'] for item0 in res_info]
+                ts = [x1 for x1 in ts1 if 'connected' in x1]
+                tsm = [x2 for x2 in ts if 'disconnected' in x2]
+
+                # print("total item: ", *ts)
+                da = len(ts)
+                dad= len(tsm)
+                if da > dad:
+                    deviceno = da - dad
+                else:
+                    deviceno = dad -da
 
                 physicalcores_set = [item5['physicalCores'] for item5 in ss_info]
                 logicalcores_set = [item6['logicalCores'] for item6 in ss_info]
