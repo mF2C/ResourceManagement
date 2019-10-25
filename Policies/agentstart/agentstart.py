@@ -3,9 +3,6 @@
 """
     RESOURCE MANAGEMENT - POLICIES MODULE
     Agent Start - Start an Agent 101
-
-    # TODO: LOG integration in triggers
-    # TODO: Reelection Integration
 """
 
 import threading
@@ -89,6 +86,7 @@ class AgentStart:
         self.URL_CAU_CLIENT = URLS.build_url_address(URLS.URL_CAU_CLIENT, portaddr=addr_CAUcl)
         self.URL_POLICIES = URLS.build_url_address(URLS.URL_POLICIES, portaddr=addr_pol)
         self.URL_DISCOVERY_WATCH = URLS.build_url_address(URLS.URL_DISCOVERY_WATCH, portaddr=addr_dis)
+        self.URL_DISCOVERY_WATCH_LEADER = URLS.build_url_address(URLS.URL_DISCOVERY_WATCH_LEADER, portaddr=addr_dis)
 
     def start(self, imLeader, imCloud):
         if self.isStarted:
@@ -477,15 +475,12 @@ class AgentStart:
         if self._connected and not self.discovery_failed:
             LOG.debug(self.TAG + 'Start Discovery Leader Watch...')
             try:
-                self.__trigger_startDiscoveryWatch()
+                self.__trigger_startDiscoveryWatchLeader()
             except Exception:
                 LOG.exception(self.TAG + 'Watch Discovery Start Fail.')
             LOG.info(self.TAG + 'Watch Discovery Start Trigger Done.')
         elif self.discovery_failed:
             LOG.warning(self.TAG + 'Discovery Watch cancelled due Discovery Trigger failed')
-
-        # Print summary
-        self.__print_summary()
 
         # Create/Modify Agent Resource
         # IF static IP configuration setup
@@ -497,6 +492,9 @@ class AgentStart:
             self.leaderIP = self.cloudIP
 
         LOG.info(self.TAG + 'deviceIP={}, leaderIP={}'.format(self.deviceIP, self.leaderIP))
+
+        # Print summary
+        self.__print_summary()
 
         self._cimi_agent_resource = AgentResource(self.deviceID, self.deviceIP, True,
                                                   True, self.imLeader, leaderIP=self.leaderIP)
@@ -800,3 +798,8 @@ class AgentStart:
         r = requests.get(self.URL_DISCOVERY_WATCH, json=payload)
         rjson = r.json()
         print(self.TAG, 'Discovery: {}'.format(rjson))
+
+    def __trigger_startDiscoveryWatchLeader(self):
+        r = requests.get(self.URL_DISCOVERY_WATCH_LEADER)
+        rjson = r.json()
+        LOG.info(self.TAG + 'Discovery: {}'.format(rjson))
