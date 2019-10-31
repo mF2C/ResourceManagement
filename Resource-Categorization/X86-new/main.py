@@ -206,9 +206,9 @@ class Main():
                               r3.reason, r3.json())
                     else:
                         cimiResourceID = {"resource-id": self.deviceDynamicID_cimiresource}
-                        devDynamic = {**devID, **dynamicinfo, **sensors, **cimiResourceID}
+                        devDynamic = {**devID, **dynamicinfo, **sensors}
                         jsonString_merged_dynamic = devDynamic
-                        r4 = requests.put("http://cimi:8201/api/device-dynamic",
+                        r4 = requests.put("http://cimi:8201/api/{}".format(self.deviceDynamicID_cimiresource),
                                           headers={"slipstream-authn-info": "internal ADMIN"},
                                           json=jsonString_merged_dynamic, verify=False)
                         print("Updating device-dynamic resource info for normal-agent: ", r4, r4.request, r4.reason,
@@ -336,9 +336,9 @@ class Main():
                               r3.reason, r3.json())
                     else:
                         cimiResourceID = {"resource-id": self.deviceDynamicID_cimiresource}
-                        devDynamic = {**devID, **dynamicinfo, **sensors, **cimiResourceID}
+                        devDynamic = {**devID, **dynamicinfo, **sensors}
                         jsonString_merged_dynamic = devDynamic
-                        r4 = requests.put("http://cimi:8201/api/device-dynamic",
+                        r4 = requests.put("http://cimi:8201/api/{}".format(self.deviceDynamicID_cimiresource),
                                           headers={"slipstream-authn-info": "internal ADMIN"},
                                           json=jsonString_merged_dynamic, verify=False)
                         print("Updating device-dynamic resource info for leader-agent: ", r4, r4.request, r4.reason,
@@ -441,7 +441,7 @@ class Main():
                 wifi_ip = devagentIP
 
 
-                childip = [y for y in ips1 if y is not None and y != "192.168.7.1" and y!= wifi_ip]
+                childip = [y for y in ips1 if y is not None and y != "192.168.7.1" and y!= wifi_ip and y!= "b\'wlan1 does not exist!\\\\n\' "]
 
                 backupip = ""
                 authenticated = True
@@ -451,8 +451,7 @@ class Main():
                 agentResource1_info = {"device_id": dID, "device_ip": devip, "leader_id": dID, "leader_ip": devip,
                                        "authenticated": authenticated, "connected": connect, "isLeader": isleader,
                                        "backup_ip": backupip, "childrenIPs": childip}
-                agentResource_info = {"device_id": dID, "leader_id": MyleaderID, "backup_ip": backupip,
-                                      "childrenIPs": childip}
+                agentResource_info = {"device_id": dID, "leader_id": MyleaderID,"childrenIPs": childip}
 
                 agentRes_info = json.dumps(agentResource_info)
                 agentRes1_info = json.dumps(agentResource1_info)
@@ -562,7 +561,13 @@ class Main():
                 dinfo = r99.json()
                 dd_info = dinfo['deviceDynamics']
 
+                # mdrs_info = rsmd_info
                 mdrs_info = dd_info
+
+                # dynamics_info['deviceDynamics'] = mdrs_info
+                # modifiedDynamic_info = dynamics_info
+                # mdDdyna = json.dumps(modifiedDynamic_info)
+                # # print("mdDdyna-info: ", mdrs_info)
 
                 res_info = [i for i in mdrs_info if (i['status'] != "unavailable" or i['status'] != "disconnected")]
 
@@ -570,7 +575,7 @@ class Main():
                 ts = [x1 for x1 in ts1 if 'connected' in x1]
                 tsm = [x2 for x2 in ts if 'disconnected' in x2]
 
-
+                # print("total item: ", *ts)
                 da = len(ts)
                 dad= len(tsm)
                 if da > dad:
@@ -720,7 +725,7 @@ class Main():
                                 print(k)
                                 print("No devices are attached with the leader")
                         else:
-                            r8 = requests.put("http://cimi:8201/api/fog-area",
+                            r8 = requests.put("http://cimi:8201/api/{}".format(self.fogresourceid),
                                               headers={"slipstream-authn-info": "internal ADMIN"}, json=fogarealo_info,
                                               verify=False)
                             print("Updated Fog-Area resource info: ", r8, r8.request, r8.reason, r8.json())
