@@ -62,7 +62,7 @@ def static_info():
         return hwsw_stat
 
     def net_stat_info():
-         global ethe_address_NIC, wifi_address_NIC
+         global ethe_address_NIC, wifi_address_NIC, net_stat
          ddisIP =''
 
          try:
@@ -89,38 +89,39 @@ def static_info():
                         ddisIP = "None"
                 except:
                     ddisIP = "None"
-                net_stat = json.dumps({"networkingStandards": 'WiFi'})
+                if ddisIP != "" and ddisIP != "None":
+                    net_stat = json.dumps({"networkingStandards": 'WiFi'})
 
-            else:
-                try:
-                    timeout = time.time() + 60 * 2
-                    while True:
-                        ddisIP = ''
-                        try:
-                            with open('/vpninfo/vpnclient.status', mode='r') as json_file:
-                                json_txt = json_file.readlines()[0]
-                                ljson = json.loads(json_txt)
-                                if ljson['status'] == 'connected':
-                                    ddisIP = str(ljson['ip'])
-                                    print(
+                else:
+                    try:
+                        timeout = time.time() + 60 * 2
+                        while True:
+                            ddisIP = ''
+                            try:
+                                with open('/vpninfo/vpnclient.status', mode='r') as json_file:
+                                    json_txt = json_file.readlines()[0]
+                                    ljson = json.loads(json_txt)
+                                    if ljson['status'] == 'connected':
+                                        ddisIP = str(ljson['ip'])
+                                        print(
                                     'VPN IP successfully parsed from JSON file at \'{}\'. Content: {} IP: {}'.format(
                                         '/vpninfo/vpnclient.status',
                                         str(ljson),
                                         ddisIP))
-                                else:
-                                    print('VPN JSON status != \'connected\': Content: {}'.format(str(ljson)))
-                        except OSError:
-                            print('VPN file cannot be open or found at \'{}\'.'.format('/vpninfo/vpnclient.status'))
-                        except (IndexError, KeyError):
-                            print('VPN error on parsing the IP.')
-                        except:
-                            print('VPN generic error.')
-                        if ddisIP !="" or time.time()>timeout:
-                            break
-                    net_stat = json.dumps({"networkingStandards": "Ethernet"})
-                except:
-                    eta3 = 'Null'
-                    net_stat = json.dumps({"networkingStandards": eta3})
+                                    else:
+                                        print('VPN JSON status != \'connected\': Content: {}'.format(str(ljson)))
+                            except OSError:
+                                print('VPN file cannot be open or found at \'{}\'.'.format('/vpninfo/vpnclient.status'))
+                            except (IndexError, KeyError):
+                                print('VPN error on parsing the IP.')
+                            except:
+                                print('VPN generic error.')
+                            if ddisIP !="" or time.time()>timeout:
+                                break
+                        net_stat = json.dumps({"networkingStandards": "Ethernet"})
+                    except:
+                        eta3 = 'Null'
+                        net_stat = json.dumps({"networkingStandards": eta3})
          except:
              eta3 = 'Null'
              net_stat = json.dumps({"networkingStandards": eta3})

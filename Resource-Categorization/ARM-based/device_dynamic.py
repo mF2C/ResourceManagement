@@ -112,7 +112,7 @@ def dynamic_info():
 
     ### Network information collection
     def net_dyna_info():
-        global ethernet_throughput_info, wifi_throughput_info, ethe_address_NIC, wifi_address_NIC
+        global ethernet_throughput_info, wifi_throughput_info, ethe_address_NIC, wifi_address_NIC, net_dyna
         ddisIP =''
         try:
             client = docker.from_env()
@@ -228,7 +228,7 @@ def dynamic_info():
                             wifi_throughput_info = [str(item) for item in wifi_throughput_info1]
                             ethernet_throughput_info = [str(item) for item in ethernet_throughput_info1]
 
-                net_dyna = json.dumps({'ethernetThroughputInfo': wifi_throughput_info, 'wifiThroughputInfo': ethernet_throughput_info,'ethernetAddress': "None", 'wifiAddress': ddisIP})
+                    net_dyna = json.dumps({'ethernetThroughputInfo': wifi_throughput_info, 'wifiThroughputInfo': ethernet_throughput_info,'ethernetAddress': "None", 'wifiAddress': ddisIP})
 
             else:
                 try:
