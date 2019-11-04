@@ -5,6 +5,6 @@ interface = os.environ['interface']
 interfaces = netifaces.interfaces()
 #check if the given interface exists
 if interface not in interfaces:
-    print (interface+" does not exist!")
+    print ("")
 else:
     print(JoinConfig.get_ip(interface))
