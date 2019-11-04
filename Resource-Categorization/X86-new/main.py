@@ -11,6 +11,7 @@ from requests.exceptions import ConnectionError
 import requests
 from datetime import datetime
 import docker
+import re
 
 docker_client2 = docker.from_env()
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -357,6 +358,8 @@ class Main():
     def agentresourceLeader(self):
         global agresid, end_url_point, wifi_address_NIC, ethe_address_NIC
         childip = []
+        childrenIP = []
+        inchildip = []
         devip = ''
         while self.deviceID_cimiresource is None:
             t.sleep(0.1)
@@ -441,7 +444,20 @@ class Main():
                 wifi_ip = devagentIP
 
 
-                childip = [y for y in ips1 if y is not None and y != "192.168.7.1" and y!= wifi_ip and y!= "b\'wlan1 does not exist!\\\\n\' "]
+                inchildip = [y for y in ips1 if y is not None and y != "192.168.7.1" and y!= wifi_ip]
+
+                pat = re.compile("^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$")
+
+                for l in inchildip:
+                    test = pat.match(l)
+                    if test:
+                        #print("Acceptable ip address: ", l)
+                        childrenIP.append(l)
+                    #else:
+                        #print("Unacceptable ip address: ", l)
+                childip = list(dict.fromkeys(childrenIP))
+
+                print("List of Children IPs: ", childip)
 
                 backupip = ""
                 authenticated = True
