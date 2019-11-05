@@ -4,6 +4,7 @@ import platform
 import json
 from os import getenv
 import docker
+import re
 docker_client = docker.from_env()
 
 
@@ -112,7 +113,7 @@ def dynamic_info():
 
     ### Network information collection
     def net_dyna_info():
-        global ethernet_throughput_info, wifi_throughput_info, ethe_address_NIC, wifi_address_NIC, net_dyna
+        global ethernet_throughput_info, wifi_throughput_info, ethe_address_NIC, wifi_address_NIC, net_dyna, devicep1
         ddisIP =''
         try:
             client = docker.from_env()
@@ -138,7 +139,16 @@ def dynamic_info():
                         ddisIP = "None"
                 except:
                     ddisIP = "None"
-                if ddisIP != "" and ddisIP != "None":
+                wifi_ip1 = ddisIP
+                patip = re.compile("^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$")
+                test1 = patip.match(wifi_ip1)
+                if test1:
+                    try:
+                        devicep1 = wifi_ip1
+                    except:
+                        devicep1 = ""
+                wifi_ip = devicep1
+                if wifi_ip != "" and wifi_ip != "None":
                     OS = platform.system()
 
                     if OS == 'Linux':
@@ -254,8 +264,18 @@ def dynamic_info():
                             print('VPN error on parsing the IP.')
                         except:
                             print('VPN generic error.')
+
                         if ddisIP !='' or time.time()>timeout:
                             break
+                    wifi_ip1 = ddisIP
+                    patip = re.compile("^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$")
+                    test1 = patip.match(wifi_ip1)
+                    if test1:
+                        try:
+                            devicep1 = wifi_ip1
+                        except:
+                            devicep1 = ""
+                    wifi_ip = devicep1
                     OS = platform.system()
 
                     if OS == 'Linux':
@@ -347,7 +367,7 @@ def dynamic_info():
 
                     net_dyna = json.dumps({'ethernetThroughputInfo': ethernet_throughput_info,
                                        'wifiThroughputInfo': wifi_throughput_info,
-                                       'ethernetAddress': ddisIP, 'wifiAddress': "None"})
+                                       'ethernetAddress': wifi_ip, 'wifiAddress': "None"})
 
                 except:
                     ethe_address_NIC = 'Null'

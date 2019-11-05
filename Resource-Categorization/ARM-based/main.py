@@ -166,7 +166,7 @@ class Main():
             print("dyna: ", dyna)
             dynamicinfo = json.loads(dyna)
             wifi_ip = dynamicinfo['wifiAddress']
-            if wifi_ip == "Null":
+            if wifi_ip == "Null" and wifi_ip == "":
                 print("IP Address is not retrieve yet!!!")
             else:
                 devDynamic = {**devID, **dynamicinfo, **sensors, **statusinfo}
@@ -283,7 +283,7 @@ class Main():
             dyna = dynamic_info()
             dynamicinfo = json.loads(dyna)
             wifi_ip = dynamicinfo['wifiAddress']
-            if wifi_ip == "Null":
+            if wifi_ip == "Null" and wifi_ip == "":
                 print("IP Address is not retrieve yet!!!")
             else:
                 devDynamic = {**devID, **dynamicinfo, **sensors, **statusinfo}
