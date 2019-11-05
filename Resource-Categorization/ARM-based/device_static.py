@@ -23,7 +23,10 @@ def static_info():
         system_arch = platform.machine()
         a = cpuinfo.get_cpu_info()
         cpu_owner_info = a['brand']
-        cpu_clock_speed = a['hz_advertised']
+        try:
+            cpu_clock_speed = a['hz_advertised']
+        except:
+            cpu_clock_speed = "1.4 GHz"
         physical_cpu = psutil.cpu_count(logical=False)
         logical_cpu = psutil.cpu_count()
         mem = psutil.virtual_memory()
