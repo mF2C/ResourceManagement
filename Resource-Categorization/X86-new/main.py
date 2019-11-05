@@ -129,7 +129,7 @@ class Main():
     ## Child Dynamic information storing to the CIMI+Dataclay ##
 
     def dynamic(self):
-        global jsonString_merged_dynamic, devagIP, devicep, devagentIP
+        global jsonString_merged_dynamic, devagIP, devicep, devagentIP, devicep1
         while self.deviceID_cimiresource is None:
             t.sleep(0.1)
         devID = {"device": {'href': str(self.deviceID_cimiresource)}}
@@ -185,11 +185,19 @@ class Main():
                     print("agent IP not retrieve yet!!!")
                 if devagentIP != '' or t.time() > timeout1:
                     break
-            wifi_ip = devagentIP
+            wifi_ip1 = devagentIP
+            patip = re.compile("^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$")
+            test1 = patip.match(wifi_ip1)
+            if test1:
+                try:
+                    devicep1 = wifi_ip1
+                except:
+                    devicep1 = ""
+            wifi_ip = devicep1
             if wifi_ip == "" and wifi_ip is None:
                 print("IP Address is not retrieve yet!!!")
             else:
-                devicep = {"wifiAddress": devagentIP}
+                devicep = {"wifiAddress": wifi_ip}
                 devDynamic = {**devID, **dynamicinfo, **sensors, **statusinfo, **devicep}
                 jsonString_merged_dynamic = devDynamic
                 print("Device-Dynamic information for Normal Agent: ", jsonString_merged_dynamic)
@@ -259,7 +267,7 @@ class Main():
     ## Leader Dynamic Information sending to the CIMI+Dataclay for storing ##
 
     def dynamicLeader(self):
-        global jsonString_merged_dynamic, devagIP, devicep, devagentIP
+        global jsonString_merged_dynamic, devagIP, devicep, devagentIP, devicep1
         while self.deviceID_cimiresource is None:
             t.sleep(0.1)
         devID = {"device": {'href': str(self.deviceID_cimiresource)}}
@@ -315,11 +323,19 @@ class Main():
                     print("agent IP not retrieve yet!!!")
                 if devagentIP != '' or t.time() > timeout1:
                     break
-            wifi_ip = devagentIP
+            wifi_ip1 = devagentIP
+            patip = re.compile("^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$")
+            test1 = patip.match(wifi_ip1)
+            if test1:
+                try:
+                    devicep1 = wifi_ip1
+                except:
+                    devicep1 = ""
+            wifi_ip = devicep1
             if wifi_ip == "" and wifi_ip is None:
                 print("IP Address is not retrieve yet!!!")
             else:
-                devicep = {"wifiAddress": devagentIP}
+                devicep = {"wifiAddress": wifi_ip}
                 devDynamic = {**devID, **dynamicinfo, **sensors, **statusinfo, **devicep}
                 jsonString_merged_dynamic = devDynamic
                 print("Device-Dynamic information for Leader agent: ", jsonString_merged_dynamic)
@@ -451,10 +467,7 @@ class Main():
                 for l in inchildip:
                     test = pat.match(l)
                     if test:
-                        #print("Acceptable ip address: ", l)
                         childrenIP.append(l)
-                    #else:
-                        #print("Unacceptable ip address: ", l)
                 childip = list(dict.fromkeys(childrenIP))
 
                 print("List of Children IPs: ", childip)
@@ -577,13 +590,7 @@ class Main():
                 dinfo = r99.json()
                 dd_info = dinfo['deviceDynamics']
 
-                # mdrs_info = rsmd_info
                 mdrs_info = dd_info
-
-                # dynamics_info['deviceDynamics'] = mdrs_info
-                # modifiedDynamic_info = dynamics_info
-                # mdDdyna = json.dumps(modifiedDynamic_info)
-                # # print("mdDdyna-info: ", mdrs_info)
 
                 res_info = [i for i in mdrs_info if (i['status'] != "unavailable" or i['status'] != "disconnected")]
 
@@ -591,7 +598,6 @@ class Main():
                 ts = [x1 for x1 in ts1 if 'connected' in x1]
                 tsm = [x2 for x2 in ts if 'disconnected' in x2]
 
-                # print("total item: ", *ts)
                 da = len(ts)
                 dad= len(tsm)
                 if da > dad:
