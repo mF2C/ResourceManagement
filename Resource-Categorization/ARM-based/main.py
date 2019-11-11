@@ -188,7 +188,7 @@ class Main():
                         cimiResourceID = {"resource-id": self.deviceDynamicID_cimiresource}
                         devDynamic = {**devID, **dynamicinfo, **sensors, **cimiResourceID}
                         jsonString_merged_dynamic = devDynamic
-                        r4 = requests.put("{}/api/device-dynamic".format(self.cimi_endpoint),
+                        r4 = requests.put("{}/api/{}".format(self.cimi_endpoint, self.deviceDynamicID_cimiresource),
                                           headers={"slipstream-authn-info": "internal ADMIN"},
                                           json=jsonString_merged_dynamic, verify=False)
                         print("Updating device-dynamic resource info for micro-agent: ", r4, r4.request, r4.reason,
@@ -305,7 +305,7 @@ class Main():
                         cimiResourceID = {"resource-id": self.deviceDynamicID_cimiresource}
                         devDynamic = {**devID, **dynamicinfo, **sensors, **cimiResourceID}
                         jsonString_merged_dynamic = devDynamic
-                        r4 = requests.put("{}/api/device-dynamic".format(self.cimi_endpoint),
+                        r4 = requests.put("{}/api/{}".format(self.cimi_endpoint,self.deviceDynamicID_cimiresource),
                                           headers={"slipstream-authn-info": "internal ADMIN"},
                                           json=jsonString_merged_dynamic, verify=False)
                         print("Updating device-dynamic resource info for leader-agent: ", r4, r4.request, r4.reason,
