@@ -58,17 +58,16 @@ def static_info():
 
 
         hwsw_stat = json.dumps({'os': os_info, 'arch':system_arch, 'cpuManufacturer': cpu_owner_info, 'physicalCores': physical_cpu,
-                      'logicalCores': logical_cpu, 'cpuClockSpeed': cpu_clock_speed,
-                      'memory': total_ram_size, 'storage': total_available_storage,
-                       'agentType': at})
+                                'logicalCores': logical_cpu, 'cpuClockSpeed': cpu_clock_speed,
+                                'memory': total_ram_size, 'storage': total_available_storage,
+                                'agentType': at})
 
         return hwsw_stat
 
     def net_stat_info():
-         global ethe_address_NIC, wifi_address_NIC, net_stat
-         ddisIP =''
-
-         try:
+        global ethe_address_NIC, wifi_address_NIC, net_stat
+        ddisIP = ''
+        try:
             client = docker.from_env()
             running_containers = client.containers.list(filters={"status": "running"})
             running_discovery_containers = []
@@ -92,9 +91,8 @@ def static_info():
                         ddisIP = "None"
                 except:
                     ddisIP = "None"
-                if ddisIP != "" and ddisIP != "None":
+                if ddisIP != "" and ddisIP != "None" and ddisIP is not "b'None\\n'":
                     net_stat = json.dumps({"networkingStandards": 'WiFi'})
-
                 else:
                     try:
                         timeout = time.time() + 60 * 2
@@ -107,10 +105,10 @@ def static_info():
                                     if ljson['status'] == 'connected':
                                         ddisIP = str(ljson['ip'])
                                         print(
-                                    'VPN IP successfully parsed from JSON file at \'{}\'. Content: {} IP: {}'.format(
-                                        '/vpninfo/vpnclient.status',
-                                        str(ljson),
-                                        ddisIP))
+                                            'VPN IP successfully parsed from JSON file at \'{}\'. Content: {} IP: {}'.format(
+                                                '/vpninfo/vpnclient.status',
+                                                str(ljson),
+                                                ddisIP))
                                     else:
                                         print('VPN JSON status != \'connected\': Content: {}'.format(str(ljson)))
                             except OSError:
@@ -119,18 +117,17 @@ def static_info():
                                 print('VPN error on parsing the IP.')
                             except:
                                 print('VPN generic error.')
-                            if ddisIP !="" or time.time()>timeout:
+                            if ddisIP != "" or time.time() > timeout:
                                 break
                         net_stat = json.dumps({"networkingStandards": "Ethernet"})
                     except:
                         eta3 = 'Null'
                         net_stat = json.dumps({"networkingStandards": eta3})
-         except:
-             eta3 = 'Null'
-             net_stat = json.dumps({"networkingStandards": eta3})
-
-
-         return net_stat
+            return net_stat
+        except:
+            eta3 = 'Null'
+            net_stat = json.dumps({"networkingStandards": eta3})
+            return net_stat
 
 
     def hwloccpuinfo():
@@ -164,7 +161,7 @@ def static_info():
             data = {
                 'hwloc': hwloc_xml,
                 'cpuinfo': cpu_info
-                }
+            }
         else:
             hwloc_xml = "This information only provided for the Linux machine"
             cpu_info = "This information only provided for the Linux machine"
@@ -195,7 +192,6 @@ def static_info():
     return jsonString_merged_static
 
 #static_info()
-
 
 
 
