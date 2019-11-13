@@ -193,6 +193,8 @@ class Main():
                     devicep1 = wifi_ip1
                 except:
                     devicep1 = ""
+            else:
+                devicep1 = ""
             wifi_ip = devicep1
             if wifi_ip == "" and wifi_ip is None:
                 print("IP Address is not retrieve yet!!!")
@@ -331,6 +333,8 @@ class Main():
                     devicep1 = wifi_ip1
                 except:
                     devicep1 = ""
+            else:
+                devicep1= ""
             wifi_ip = devicep1
             if wifi_ip == "" and wifi_ip is None:
                 print("IP Address is not retrieve yet!!!")
@@ -598,6 +602,7 @@ class Main():
                 ts = [x1 for x1 in ts1 if 'connected' in x1]
                 tsm = [x2 for x2 in ts if 'disconnected' in x2]
 
+                # print("total item: ", *ts)
                 da = len(ts)
                 dad= len(tsm)
                 if da > dad:

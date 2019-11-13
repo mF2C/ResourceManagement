@@ -1,4 +1,3 @@
-import time
 import psutil
 import platform
 import json
