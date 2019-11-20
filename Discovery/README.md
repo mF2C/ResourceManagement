@@ -241,7 +241,7 @@ where wlan0 is the name of your wireless device you will be using. Then restart 
 
 The above-steps are relevant for both the agent and the leader sides.
 
-In addtion, in the leader side, comment the follosing line, if you have it in NetworkManager.conf to allow dnsmasq to be started properly from the discovery component.
+In addtion, in the leader side, comment the following line, if you have it in NetworkManager.conf (It is likely the case if using Ubuntu 16.04) to allow dnsmasq to be started properly from the discovery component.
 
 ```
 dns=dnsmasq
