@@ -219,14 +219,36 @@ curl -X PUT http://0.0.0.0:5000/api/v1/resource-management/discovery/watch/
 ## Running using Docker (Same backend logic as above)
 
 ### Prerequisites
-In order to be able to use the wireless interface to broadcast beacons, you need to prevent NetworkManager from managing it. To do so, add the following line to /etc/NetowrkManager/NetworkManager.conf: 
+
+If you are using a Linux distribution using NetworkManager for default network configuration, the following steps may be needed to prevent it from controlling the discovery interface.
+
+- Option 1: Add the following line to /etc/NetworkManager/NetworkManager.conf: 
 ```
 [keyfile]
 unmanaged-devices=mac:aa:bb:cc:dd:ee:ff
 ```
 where aa:bb:cc:dd:ee:ff is the MAC address of the wireless device you will be using. Then restart NetworkManager. 
 
-Also worth-checking if you have already hostapd running on the host, it should be stopped first.
+- Option 2: Add the following line to /etc/NetworkManager/NetworkManager.conf: 
+
+```
+[keyfile]
+unmanaged-devices=interface-name:wlan0 
+```
+where wlan0 is the name of your wireless device you will be using. Then restart NetworkManager. 
+
+- Option 3: Stop NetworkManager.
+
+The above-steps are relevant for both the agent and the leader sides.
+
+In addtion, in the leader side, comment the follosing line, if you have it in NetworkManager.conf to allow dnsmasq to be started properly from the discovery component.
+
+```
+dns=dnsmasq
+```
+
+
+### Bulding the image
 
 Clone the repo. Within the repo, run the following command to build the image:
 
