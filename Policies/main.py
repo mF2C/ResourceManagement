@@ -31,7 +31,7 @@ import subprocess
 __status__ = 'Production'
 __maintainer__ = 'Alejandro Jurnet'
 __email__ = 'ajurnet@ac.upc.edu'
-__version__ = '2.0.11'
+__version__ = '2.0.12'
 __author__ = 'Universitat Politècnica de Catalunya'
 
 # ### Global Variables ### #
@@ -90,6 +90,7 @@ components_info_model = api.model('Resource Manager Components Information', {
     "categorization": fields.Boolean(description='Categorization module is started'),
     "policies": fields.Boolean(description='Policies module is started'),
     "discovery_description": fields.String(description='Discovery module description / parameters received'),
+    "leader_discovery_description": fields.String(description='Discovery Leader startup description'),
     "identification_description": fields.String(description='Identification module description / parameters received'),
     "categorization_description": fields.String(description='Categorization module description / parameters received'),
     "policies_description": fields.String(description='Policies module description / parameters received'),
@@ -115,7 +116,8 @@ health_model = api.model('Policies Healthcheck', {
     "backupElected": fields.Boolean(description="True if (activeBackups > 0 and isLeader=True) or isCloud=True"),
     "leaderfound": fields.Boolean(description="True if leader found by discovery or (isCloud = True || isLeader = True)"),
     "JOIN-MYIP": fields.Boolean(description="True if joined and IP from discovery obtained or (isCloud = True || isLeader = True)"),
-    "wifi-iface": fields.Boolean(description="True if wifi iface not empty or (isCloud = True)")
+    "wifi-iface": fields.Boolean(description="True if wifi iface not empty or (isCloud = True)"),
+    "agent-resource": fields.Boolean(description="True if agent resource created")
 })
 
 
@@ -154,6 +156,8 @@ class ResourceManagerStatus(Resource):
             {'cau_client_description': 'authenticated: {}, secureConnection: {}'.format(agentstart.isAuthenticated,
                                                                                         agentstart.secureConnection) if payload.get(
                 'cau_client') else 'CAU_client not started or error on trigger.'})
+        if agentstart.discovery_switched is not None:
+            payload.update({'leader_discovery_description' : '{}'.format(agentstart.discovery_switched)})
         return payload, 200
 
 
@@ -186,7 +190,8 @@ class policiesHealthcheck(Resource):
             'backupElected': True if arearesilience.getAmountActiveBackups() > 0 or not agentstart.imLeader or agentstart.imCloud else False,
             'leaderfound': True if (agentstart.bssid is not None and agentstart.bssid != '') or agentstart.imLeader or agentstart.imCloud else False,
             'JOIN-MYIP': True if (agentstart.discovery_joined is not None and agentstart.discovery_joined) or agentstart.imCloud or agentstart.imLeader else False,
-            'wifi-iface': True if CPARAMS.WIFI_DEV_FLAG != '' or CPARAMS.CLOUD_FLAG else False
+            'wifi-iface': True if CPARAMS.WIFI_DEV_FLAG != '' or CPARAMS.CLOUD_FLAG else False,
+            'agent-resource': True if agentstart._cimi_agent_resource_id is not None and agentstart._cimi_agent_resource_id != '' else False
         }
         components = payload['identification'] and payload['discovery'] and payload['cau-client'] and payload['res-cat'] and payload['area-resilience'] and payload['vpn-client']
         components_no_discovery = payload['identification'] and payload['cau-client'] and payload['res-cat'] and payload['area-resilience'] and payload['vpn-client']
@@ -195,7 +200,7 @@ class policiesHealthcheck(Resource):
         discovery_ok_leader_notfound_vpn_ok = payload['discovery'] and not payload['leaderfound'] and payload['vpn-client'] and payload['deviceIP'] and payload['leaderIP']
 
         # GREEN STATUS EVALUATION
-        if not components_no_discovery or not ips or not payload['deviceID']:
+        if not components_no_discovery or not ips or not payload['deviceID'] or not payload['agent-resource']:
             if time() - startup_time < payload['startup_time']:
                 payload['status'] = 'ORANGE'
             else:
@@ -214,7 +219,7 @@ class policiesHealthcheck(Resource):
         else:
             payload['status'] = 'YELLOW'
             payload['health'] = True
-        LOG.info('Policies Health={} Status={} Started={} Components={} IPs={} ID={}'.format(payload['health'],payload['status'],payload['startup'],components, ips, payload['deviceID']))
+        LOG.info('Policies Health={} Status={} Started={} Components={} IPs={} ID={} AgentRes={}'.format(payload['health'],payload['status'],payload['startup'],components, ips, payload['deviceID'], payload['agent-resource']))
         status_code = 200 if payload['health'] else 400
         return payload, status_code
 
@@ -484,7 +489,6 @@ def initialization():
                                 addr_id=('identification', '46060'))
     else:
         agentstart = AgentStart(addr_pol=('127.0.0.1', '46050'))
-    agentstart.deviceID = CPARAMS.DEVICEID_FLAG     # TODO: remove this
     if CPARAMS.LEADER_IP_FLAG is not None and len(CPARAMS.LEADER_IP_FLAG) != 0:
         agentstart.leaderIP = CPARAMS.LEADER_IP_FLAG
     LOG.debug('Agent Start created')

@@ -100,6 +100,7 @@ class CIMIcalls:
                 LOG.error('CIMI create agent already exists! resource-id {}'.format(rjson.get('resource-id')))
             elif r.status_code not in [200, 201]:
                 LOG.error('CIMI create Agent error dettected! Payload Sent: {}'.format(payload))
+                return ''
             return str(rjson.get('resource-id'))
         except:
             LOG.exception('CIMI agent [{}] failed'.format(URL))
@@ -188,7 +189,10 @@ class CIMIcalls:
         try:
             r = requests.put(URL, headers=CIMIcalls.CIMI_HEADERS, verify=False, json=payload)
             # rjson = r.json()
-            LOG.debug('CIMI EDIT resource [{}] status_code {} content {} payload {}'.format(URL, r.status_code, r.content, payload))
+            if r.status_code != 200:
+                LOG.warning('CIMI EDIT resource [{}] status_code {} content {} payload {}'.format(URL, r.status_code, r.content, payload))
+            else:
+                LOG.debug('CIMI EDIT resource [{}] status_code {} content {} payload {}'.format(URL, r.status_code, r.content, payload))
             return r.status_code
         except:
             LOG.exception('CIMI EDIT resource [{}] failed.'.format(URL))
@@ -227,21 +231,25 @@ class AgentResource:
         self.childrenIPs = []
 
     def getCIMIdicc(self):
-        p = {
-            'device_id' : self.deviceID,
-            'device_ip' : self.deviceIP,
-            'authenticated' : self.authenticated,
-            'connected' : self.connected,
-            'isLeader' : self.isLeader
-        }
-
+        p = {}
+        if self.deviceID is not None:
+            p.update({'device_id' : self.deviceID})
+        if self.deviceIP is not None:
+            p.update({'device_ip' : self.deviceIP})
+        if self.authenticated is not None:
+            p.update({'authenticated' : self.authenticated})
+        if self.connected is not None:
+            p.update({'connected' : self.connected})
+        if self.isLeader is not None:
+            p.update({'isLeader' : self.isLeader})
         if self.leaderID is not None:
             p.update({'leader_id' : self.leaderID})
         if self.leaderIP is not None:
             p.update({'leader_ip' : self.leaderIP})
         if self.backupIP is not None:
             p.update({'backup_ip' : self.backupIP})
-
+        # if self.childrenIPs is not None:
+        #     p.update({'childrenIPs' : self.childrenIPs})
         return p
 
     @staticmethod

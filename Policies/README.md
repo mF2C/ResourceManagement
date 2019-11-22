@@ -129,7 +129,8 @@ curl -X GET "http://localhost/rm/components" -H "accept: application/json"
   "identification_description": "string",       // Identification module description / parameters received
   "categorization_description": "string",       // Categorization module description / parameters received
   "policies_description": "string",             // Policies module description / parameters received
-  "cau_client_description": "string"            // CAUClient module description / parameters received
+  "cau_client_description": "string",           // CAUClient module description / parameters received
+  "leader_discovery_description": "string"      // Discovery Leader startup description
     }
     ```
 
@@ -141,14 +142,16 @@ Health of the Policies module. Policies only works properly under GREEN and YELL
 >
 > **YELLOW:** Discovery failed or leader not found (only in agent side) but IPs correctly setup, Backup not elected (if Leader).
 >
-> **RED:** Component(s) trigger failed, IPs not set, deviceID not generated
+> **RED:** Component(s) trigger failed, IPs not set, deviceID not generated, or Agent resource not created
 >
 > **ORANGE:** YELLOW or RED status, but still starting. 
+
+If docker healthcheck if set: `docker inspect mf2c_policies_1 | jq -e ".[0].State.Health"` 
 
 - **GET** /api/v2/resource-management/policies/healthcheck
 
 ```bash
-curl -X GET "http://localhost//api/v2/resource-management/policies/healthcheck" -H "accept: application/json"
+curl -X GET "http://localhost/api/v2/resource-management/policies/healthcheck" -H "accept: application/json"
 ```
 
 - **RESPONSES**
@@ -175,7 +178,8 @@ curl -X GET "http://localhost//api/v2/resource-management/policies/healthcheck" 
         "backupElected": true,                 // "True if (activeBackups > 0 and isLeader=True) or isCloud=True"),
         "leaderfound": true,                   // "True if leader found by discovery or (isCloud = True || isLeader = True)"),
         "JOIN-MYIP": true,                     // "True if joined and IP from discovery obtained or (isCloud = True || isLeader = True)"),
-        "wifi-iface": true                     // "True if wifi iface not empty or (isCloud = True)")
+        "wifi-iface": true,                    // "True if wifi iface not empty or (isCloud = True)")
+        "agent-resource": true                 // "True if agent resource created"
         }
     ```
 
