@@ -548,9 +548,11 @@ def addBackupOnAgentResource(backupIP):
     try:
         agent_resource, agent_resource_id = CIMI.getAgentResource()
         ar = AgentResource.load(agent_resource)
-        ar.backupIP = backupIP
-        LOG.debug('Adding backup [{}] in Agent Resource'.format(backupIP))
-        CIMI.modify_resource(agent_resource_id, ar.getCIMIdicc())
+        if ar.backupIP is not None or (ar.backupIP != '' and ar.backupIP is not None):
+            LOG.warning('Non-empty backupIP value when adding a new backup! Agent resource: {}'.format(ar.getCIMIdicc()))
+        ar2 = AgentResource(None, None, None, None, None, backupIP='{}'.format(backupIP))
+        LOG.debug('Adding backup [{}] in Agent Resource. Updated agent resource: {}'.format(backupIP, ar2.getCIMIdicc()))
+        CIMI.modify_resource(agent_resource_id, ar2.getCIMIdicc())
     except:
         LOG.exception('Add backup in Agent resource failed')
 
@@ -560,9 +562,9 @@ def deleteBackupOnAgentResource(backupIP):
         agent_resource, agent_resource_id = CIMI.getAgentResource()
         ar = AgentResource.load(agent_resource)
         if ar.backupIP != backupIP:
-            LOG.warning('Backup [{}] does not match [{}] stored in Agent Resource'.format(ar.backupIP, backupIP))
-        ar.backupIP = None
-        LOG.debug('Adding backup [{}] in Agent Resource')
-        CIMI.modify_resource(agent_resource_id, ar.getCIMIdicc())
+            LOG.warning('Backup [{}] does not match [{}] stored in Agent Resource'.format(backupIP, ar.backupIP))
+        ar2 = AgentResource(None, None, None, None, None, backupIP='')
+        LOG.debug('Removing backup [{}] in Agent Resource. Updated agent resource: {}'.format(backupIP, ar2.getCIMIdicc()))
+        CIMI.modify_resource(agent_resource_id, ar2.getCIMIdicc())
     except:
         LOG.exception('Add backup in Agent resource failed')
