@@ -150,7 +150,8 @@ def dynamic_info():
                 else:
                     devicep1 = ""
                 wifi_ip = devicep1
-                if wifi_ip != "" and wifi_ip != "None" and wifi_ip is not "b'None\\n'":
+                print('\n\nwifi_ip:{}\n\n'.format(wifi_ip))
+                if wifi_ip != "" and wifi_ip != "None" and wifi_ip != "b'None\\n'":
                     OS = platform.system()
 
                     if OS == 'Linux':
@@ -269,6 +270,9 @@ def dynamic_info():
 
                             if ddisIP != '' or time.time() > timeout:
                                 break
+                            else:
+                                print('\n\ntimeout: {} > {} = {}'.format(time.time(), timeout, time.time() > timeout))
+                            time.sleep(1.)
                         wifi_ip1 = ddisIP
                         patip = re.compile("^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$")
                         test1 = patip.match(wifi_ip1)
