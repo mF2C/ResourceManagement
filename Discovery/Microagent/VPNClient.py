@@ -8,6 +8,7 @@ VPNCLIENTCONFIG = {
     "cap_add": ["NET_ADMIN"],
     "volumes":{'pkidata': {'bind': '/pkidata', 'mode': 'rw'},
                'vpninfo': {'bind': '/vpninfo', 'mode': 'rw'}},
+    "environment":{"VPNINFO":"/vpninfo/vpnclient.status"},
     "name":"mf2c_micro_vpnclient",
     "labels":{"mf2c.component":"True","mf2c.agent.type":"microagent"}
     }
@@ -70,6 +71,7 @@ def connect_to_vpn():
                                       extra_hosts=VPNCLIENTCONFIG["extra_hosts"],
                                       cap_add = VPNCLIENTCONFIG["cap_add"],
                                       volumes=VPNCLIENTCONFIG["volumes"],
+                                      environment=VPNCLIENTCONFIG["environment"],
                                       labels=VPNCLIENTCONFIG["labels"],
                                       name=VPNCLIENTCONFIG["name"],
                                       detach=True)
