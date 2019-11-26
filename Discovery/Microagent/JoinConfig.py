@@ -47,14 +47,18 @@ class JoinConfig(object):
 
     @staticmethod
     def check(interface):   
-        command = ['wpa_cli','-i',interface,'status']
+        command = ['wpa_cli','-i',interface,'status' , '>> log_file.txt 2>&1']
         try:
-            out = subprocess.check_output(command).decode()
+            #out = subprocess.check_output(command).decode()
+            rt_code = subprocess.call(command)
             
-        except subprocess.CalledProcessError as e:
-            out = e.output.decode()
+        except:
+            out = "error"
+        
+        with open("log_file.txt") as f:
+            log_content = f.readlines()
             
-        if ("ssid=mf2c-leader" in out):
+        if ("ssid=mf2c-leader" in log_content):
             has_joined=True
         else:
             has_joined=False
