@@ -135,7 +135,8 @@ def dynamic_info():
                     exit_code, output = disc_cont_id.exec_run(cmd, stderr=True, stdout=True, demux=True)
                     if exit_code == 0:
                         ip = output[0]  # output[0] is the stdout
-                        ddisIP = str(ip)
+                        ddisIP = bytes(ip).decode()
+                        ddisIP = ddisIP[:-1]
                     else:
                         ddisIP = "None"
                 except:
