@@ -130,6 +130,7 @@ def dynamic_info():
             if len(running_discovery_containers) == 1:
                 disc_cont_id = running_discovery_containers[0]
                 cmd = 'python get_ip_addr.py'
+                output = ''
                 try:
                     exit_code, output = disc_cont_id.exec_run(cmd, stderr=True, stdout=True, demux=True)
                     if exit_code == 0:
@@ -150,7 +151,7 @@ def dynamic_info():
                 else:
                     devicep1 = ""
                 wifi_ip = devicep1
-                print('\n\nwifi_ip:{}\n\n'.format(wifi_ip))
+                print('\n\nwifi_ip:{}, ddisIP:{}, test1:{}, output:{}\n\n'.format(wifi_ip,ddisIP, test1, output))
                 if wifi_ip != "" and wifi_ip != "None" and wifi_ip != "b'None\\n'":
                     OS = platform.system()
 
