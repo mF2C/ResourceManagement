@@ -132,7 +132,7 @@ class Broadcaster(object):
     @staticmethod
     def fill_dhcp_config(if_name): 
         with open("/etc/dnsmasq.conf", "w") as dns_file:
-            content = "no-resolv\n"+"server=8.8.8.8\n"+"interface=lo,"+if_name+"\n"+"no-dhcp-interface=lo\n"+"dhcp-range=192.168.7.20,192.168.7.254,255.255.255.0,12h\n"+"dhcp-option=3"
+            content = "no-resolv\n"+"server=8.8.8.8\n"+"interface=lo,"+if_name+"\n"+"no-dhcp-interface=lo\n"+"dhcp-range=192.168.7.20,192.168.7.254,255.255.255.0,12h\n"+"dhcp-option=3\n"+"ra-param=*,0,0"
             dns_file.write(content)
         
     @staticmethod
