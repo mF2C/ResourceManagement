@@ -681,6 +681,9 @@ class AgentStart:
             if r2.status_code != 200:
                 LOG.warning(self.TAG + 'MYIP operation failed. Reply from discovery: {}'.format(rjson2))
                 return False
+            elif 'IP_address' not in rjson2 or rjson2['IP_address'] is None or len(rjson2['IP_address']) == 0:
+                LOG.error(self.TAG + 'MYIP operation returned an OK code BUT IP_address is empty! json: {}'.format(rjson2))
+                return False
             LOG.debug(self.TAG + 'MYIP trigger success. Reply form Discovery: {}'.format(rjson2['IP_address']))
             self.deviceIP = rjson2['IP_address']
             return True
