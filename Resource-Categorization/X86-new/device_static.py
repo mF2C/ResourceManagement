@@ -6,6 +6,7 @@ import subprocess
 from os import getenv
 import docker
 
+
 docker_client1 = docker.from_env()
 
 
@@ -44,11 +45,11 @@ def static_info():
 
         agent_type = getenv('agentType')
         if agent_type == '1':
-            at = 'Cloud Agent'
+            at = 'cloud'
         elif agent_type == '2':
-            at = 'Fog Agent'
+            at = 'normal'
         elif agent_type == '3':
-            at = 'Micro Agent'
+            at = 'micro'
         else:
             at = 'empty'
 
@@ -61,11 +62,10 @@ def static_info():
         return hwsw_stat
 
     def net_stat_info():
+
         eta3 = 'WiFi'
         net_stat = json.dumps({"networkingStandards": eta3})
         return net_stat
-
-
 
     def hwloccpuinfo():
         OS = platform.system()
@@ -86,7 +86,7 @@ def static_info():
 
             lstring = hwloc_xml.split('IRILD039')
             try:
-                hwloc_xml = lstring[0] + host + lstring[1]
+                hwloc_xml = lstring[0] + host.rstrip() + lstring[1]
             except:
                 print('Error hostname')
 
