@@ -4,6 +4,7 @@ import json
 from os import getenv
 import docker
 
+
 docker_client = docker.from_env()
 
 
@@ -111,6 +112,7 @@ def dynamic_info():
 ### Network information collection
     def net_dyna_info():
         global ethernet_throughput_info, wifi_throughput_info, ethe_address_NIC, wifi_address_NIC, net_dyna
+
         OS = platform.system()
         if OS == 'Linux':
             net_if_add = psutil.net_if_addrs()
@@ -209,5 +211,4 @@ def dynamic_info():
     D = json.loads(d)
     z = {**C, **D}
     jsonString_merged_dynamic = json.dumps(z)
-
     return jsonString_merged_dynamic

@@ -471,7 +471,9 @@ class Main():
                 for l in inchildip:
                     test = pat.match(l)
                     if test:
+
                         childrenIP.append(l)
+
                 childip = list(dict.fromkeys(childrenIP))
 
                 print("List of Children IPs: ", childip)

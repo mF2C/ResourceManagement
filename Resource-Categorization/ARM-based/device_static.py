@@ -48,11 +48,11 @@ def static_info():
 
         agent_type = getenv('agentType')
         if agent_type == '1':
-            at = 'Cloud Agent'
+            at = 'cloud'
         elif agent_type == '2':
-            at = 'Fog Agent'
+            at = 'normal'
         elif agent_type == '3':
-            at = 'Micro Agent'
+            at = 'micro'
         else:
             at = 'empty'
 
@@ -86,12 +86,13 @@ def static_info():
                     exit_code, output = disc_cont_id.exec_run(cmd, stderr=True, stdout=True, demux=True)
                     if exit_code == 0:
                         ip = output[0]  # output[0] is the stdout
-                        ddisIP = str(ip)
+                        ddisIP = bytes(ip).decode()
+                        ddisIP = ddisIP[:-1]
                     else:
                         ddisIP = "None"
                 except:
                     ddisIP = "None"
-                if ddisIP != "" and ddisIP != "None" and ddisIP is not "b'None\\n'":
+                if ddisIP != "" and ddisIP != "None" and ddisIP != "b'None\\n'":
                     net_stat = json.dumps({"networkingStandards": 'WiFi'})
                 else:
                     try:
@@ -150,7 +151,7 @@ def static_info():
 
             lstring = hwloc_xml.split('IRILD039')
             try:
-                hwloc_xml = lstring[0] + host + lstring[1]
+                hwloc_xml = lstring[0] + host.rstrip() + lstring[1]
             except:
                 print('Error hostname')
 
