@@ -9,7 +9,8 @@ VPNCLIENTCONFIG = {
     "volumes":{'pkidata': {'bind': '/pkidata', 'mode': 'rw'},
                'vpninfo': {'bind': '/vpninfo', 'mode': 'rw'}},
     "name":"mf2c_micro_vpnclient",
-    "labels":{"mf2c.component":"True","mf2c.agent.type":"microagent"}
+    "labels":{"mf2c.component":"True","mf2c.agent.type":"microagent"},
+    "environment":{"VPNINFO":"/vpninfo/vpnclient.status"}
     }
 
 def is_internet_connected():
@@ -71,6 +72,7 @@ def connect_to_vpn():
                                       cap_add = VPNCLIENTCONFIG["cap_add"],
                                       volumes=VPNCLIENTCONFIG["volumes"],
                                       labels=VPNCLIENTCONFIG["labels"],
+                                      environment=VPNCLIENTCONFIG["environment"],
                                       name=VPNCLIENTCONFIG["name"],
                                       detach=True)
                 for line in container.logs(stream=True):

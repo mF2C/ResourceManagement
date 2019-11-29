@@ -23,7 +23,7 @@ class JoinConfig(object):
         else:
             
             interface_arg = "-i"+interface
-
+            timeout = time.time() + 30
             return_code = subprocess.call(['wpa_supplicant', interface_arg, '-Dnl80211', '-c/etc/wpa_supplicant/wpa_supplicant.conf' ,'-B'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 
             if return_code != 0:
@@ -34,7 +34,7 @@ class JoinConfig(object):
                 stop_cond = False
                 while stop_cond == False:
                     association_true = JoinConfig.check(interface)
-                    if association_true:
+                    if association_true or time.time() > timeout:
                         stop_cond = True
                     time.sleep(1)
                     
@@ -49,7 +49,7 @@ class JoinConfig(object):
     def check(interface):   
         command = ['wpa_cli','-i',interface,'status']
         try:
-            out = subprocess.check_output(command).decode()
+            out = subprocess.check_output(command,stderr=subprocess.DEVNULL).decode()
             
         except subprocess.CalledProcessError as e:
             out = e.output.decode()
@@ -64,17 +64,29 @@ class JoinConfig(object):
     def get_ip(interface):
         stop_condition = False
         ip = ''
-        while stop_condition == False:
-            try:
-                ip = netifaces.ifaddresses(interface)[netifaces.AF_INET][0]['addr']
-            except Exception as e:
-                excep = e
-            
-            if ip != '' and "169.254" not in ip:
-                stop_condition = True
-            
-            time.sleep(1)
+        timeout = time.time() + 30
+
+        return_code = subprocess.call(['dhclient',interface],stderr=subprocess.DEVNULL,stdout=subprocess.DEVNULL)
         
-        return ip
+        if return_code != 0:
+            return ip
+        else:
+
+            while stop_condition == False:
+                try:
+                    ip = netifaces.ifaddresses(interface)[netifaces.AF_INET][0]['addr']
+                except Exception as e:
+                    excep = e
+                
+                if (ip != '' and "169.254" not in ip) or time.time() > timeout:
+                    stop_condition = True
+                
+                time.sleep(1)
+            
+            return ip
+            
+
+        
+
         
 
