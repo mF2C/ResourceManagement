@@ -1,0 +1,33 @@
+### Changelog
+- 4.10 (29/11/2019)
+	- Added connect to vpn when join unsuccessful or ip retrieval unsuccessful
+	- Fixed discovery container logs issue
+	- Code enhancements in main discovery workflow
+- 4.9 (14/11/2019)
+	- Added vpninfo environment variable
+- 4.8 (6/11/2019)
+	- Replaced string returned by get_ip_addr with “None”
+- 4.7 (25/10/2019)
+	- Added vpninfo volume
+- 4.6 (22/10/2019)
+	- Replaced vpnclient container version with `mf2c/vpnclient1.1.5arm`
+- 4.5 (1/10/2019)
+	- Replaced vpncient container version with `mf2c/vpnclient1.1.2arm`
+- 4.4 (19/9/2019)
+	- Changing the vpn status check method
+- 4.3 (20/8/2019)
+	- Included vpnclient version `vpnclient:1.1.1arm` and added more sanity checks to the code
+- 4.2 (14/8/2019)
+	- Added check if interface exists in `get_ip_addr.py`
+- 4.1 (8/7/2019)
+	- Replaced triggering the openvpn command by starting the official mf2c vpnclient container
+- 4.0 (9/4/2019)
+	- Added `--daemon` for starting openvpn from the python script
+- 3.0 (5/4/2019)
+	- Bug fixes: added exiting
+- 2.0 (3/4/2019)
+	- Adds support for vpn connection if no leader has been found after the first scan attempt.
+- 1.0 (29/3/2019)
+	- Initial version
+
+
