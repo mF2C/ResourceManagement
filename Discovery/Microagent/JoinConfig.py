@@ -70,7 +70,7 @@ class JoinConfig(object):
         if return_code != 0:
             return ip
         else:
-	    timeout = time.time() + 30
+            timeout = time.time() + 30
             while stop_condition == False:
                 try:
                     ip = netifaces.ifaddresses(interface)[netifaces.AF_INET][0]['addr']
