@@ -69,7 +69,7 @@ def main():
                 bssid = found_leaders[0]['Bssid']
                 result = join_leader(bssid,interface)
                 print ("[Discovery] "+result["message"])
-                if "Successfully" in result["message"]:
+                if ("Successfully" in result["message"]) or ("Already associated" in result["message"]):
                     print("[Discovery] Getting IP address...")
                     ip = retrieve_ip(interface)
                     if ip!= None:
