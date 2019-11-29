@@ -56,7 +56,7 @@ class JoinConfig(object):
     def check(interface):   
         command = ['wpa_cli','-i',interface,'status']
         try:
-            out = subprocess.check_output(command).decode()
+            out = subprocess.check_output(command, stderr=subprocess.DEVNULL).decode()
         except subprocess.CalledProcessError as e:
             out = e.output.decode()
             
@@ -87,7 +87,7 @@ class JoinConfig(object):
                 if has_joined:
                     #run dhclient to force IP assignment (will happen if this is a normal agent)
                     
-                    return_code = subprocess.call(['dhclient',wifi_interface])
+                    return_code = subprocess.call(['dhclient',wifi_interface],stderr=subprocess.DEVNULL,stdout=subprocess.DEVNULL)
             
                     #Then retrieve the IP  
                     stop_condition = False
