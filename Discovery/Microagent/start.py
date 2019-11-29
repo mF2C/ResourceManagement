@@ -76,6 +76,10 @@ def main():
                         print("[Discovery] IP address of "+interface+" = "+ip)
                     else:
                         print("[Discovery] Unable to retrieve IP of "+interface)
+                        connect_to_vpn() 
+                else:
+                    print("[Discovery] Unable to join the leader...")
+                    connect_to_vpn()
 
 if __name__ == '__main__':
     try:
