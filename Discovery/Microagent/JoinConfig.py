@@ -64,14 +64,13 @@ class JoinConfig(object):
     def get_ip(interface):
         stop_condition = False
         ip = ''
-        timeout = time.time() + 30
 
         return_code = subprocess.call(['dhclient',interface],stderr=subprocess.DEVNULL,stdout=subprocess.DEVNULL)
         
         if return_code != 0:
             return ip
         else:
-
+	    timeout = time.time() + 30
             while stop_condition == False:
                 try:
                     ip = netifaces.ifaddresses(interface)[netifaces.AF_INET][0]['addr']
