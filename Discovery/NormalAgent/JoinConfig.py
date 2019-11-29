@@ -71,12 +71,7 @@ class JoinConfig(object):
     def get_ip():
         ip = ""
         #Getting the name of the interface to be used
-        all_ifs = ni.interfaces()
-        wifi_interface = ""
-        for interface in all_ifs:
-            if interface.startswith("wl"):
-                wifi_interface = interface
-                break
+        wifi_interface = os.environ.get('WIFI_DEV_FLAG')
 
         if wifi_interface == "":
             return ip
