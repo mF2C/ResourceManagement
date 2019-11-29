@@ -104,20 +104,65 @@ class Main():
         jsonString_merged_static = devStatic
         print("Device information for micro agent: ", jsonString_merged_static)
 
+        ddisIP = ''
         try:
-            r = requests.post("{}/api/device".format(self.cimi_endpoint), headers={"slipstream-authn-info": "internal ADMIN"}, json=jsonString_merged_static, verify=False)
-            print("Posting device resource info for micro-agent: ", r, r.request, r.reason, r.json())
+            client = docker.from_env()
+            running_containers = client.containers.list(filters={"status": "running"})
+            running_discovery_containers = []
+            for container in running_containers:
+                container_im = container.attrs['Config']['Image']
+                try:
+                    if "discovery" in container_im:
+                        running_discovery_containers.append(container)
+                except:
+                    running_discovery_containers = []
+
+            if len(running_discovery_containers) == 1:
+                disc_cont_id = running_discovery_containers[0]
+                cmd = 'python get_ip_addr.py'
+                try:
+                    exit_code, output = disc_cont_id.exec_run(cmd, stderr=True, stdout=True, demux=True)
+                    if exit_code == 0:
+                        ip = output[0]  # output[0] is the stdout
+                        ddisIP = bytes(ip).decode()
+                        ddisIP = ddisIP[:-1]
+                    else:
+                        ddisIP = "None"
+                except:
+                    ddisIP = "None"
+                if ddisIP != "" and ddisIP != "None" and ddisIP != "b'None\\n'":
+                    try:
+                        r = requests.post("https://192.168.7.1/api/device", headers={"slipstream-authn-info": "internal ADMIN"}, json=jsonString_merged_static, verify=False)
+                        print("Posting device resource info for micro-agent: ", r, r.request, r.reason, r.json())
 
 
-            #capturing the corresponding cimi resource-id
-            self.deviceID_cimiresource = r.json()['resource-id']
-            r1 = requests.get("{}/api/device".format(self.cimi_endpoint), headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
-            print("Response to see posted device resource info for micro-agent: ", r1, r1.request, r1.reason, r1.json())
+                        #capturing the corresponding cimi resource-id
+                        self.deviceID_cimiresource = r.json()['resource-id']
+                        r1 = requests.get("https://192.168.7.1/api/device", headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
+                        print("Response to see posted device resource info for micro-agent: ", r1, r1.request, r1.reason, r1.json())
 
-        except Exception as e:
-            print (e)
-            r = "No response"
-            print(r)
+                    except Exception as e:
+                        print (e)
+                        r = "No response"
+                        print(r)
+                else:
+                    try:
+                        r = requests.post("{}/api/device".format(self.cimi_endpoint), headers={"slipstream-authn-info": "internal ADMIN"}, json=jsonString_merged_static, verify=False)
+                        print("Posting device resource info for micro-agent: ", r, r.request, r.reason, r.json())
+
+
+                        #capturing the corresponding cimi resource-id
+                        self.deviceID_cimiresource = r.json()['resource-id']
+                        r1 = requests.get("{}/api/device".format(self.cimi_endpoint), headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
+                        print("Response to see posted device resource info for micro-agent: ", r1, r1.request, r1.reason, r1.json())
+
+                    except Exception as e:
+                        print (e)
+                        r = "No response"
+                        print(r)
+        except Exception as er:
+            print("No response, the reason is: {}".format(er))
+
         while (not switch_flag):
             t.sleep(0.1)
 
@@ -171,36 +216,92 @@ class Main():
                 devDynamic = {**devID, **dynamicinfo, **sensors, **statusinfo}
                 jsonString_merged_dynamic = devDynamic
                 print("Device-Dynamic information for Micro Agent: ", jsonString_merged_dynamic)
+                ddisIP = ''
                 try:
-                    if self.deviceDynamicID_cimiresource is None:
-                        r2 = requests.post("{}/api/device-dynamic".format(self.cimi_endpoint),
+                    client = docker.from_env()
+                    running_containers = client.containers.list(filters={"status": "running"})
+                    running_discovery_containers = []
+                    for container in running_containers:
+                        container_im = container.attrs['Config']['Image']
+                        try:
+                            if "discovery" in container_im:
+                                running_discovery_containers.append(container)
+                        except:
+                            running_discovery_containers = []
+
+                    if len(running_discovery_containers) == 1:
+                        disc_cont_id = running_discovery_containers[0]
+                        cmd = 'python get_ip_addr.py'
+                        try:
+                            exit_code, output = disc_cont_id.exec_run(cmd, stderr=True, stdout=True, demux=True)
+                            if exit_code == 0:
+                                ip = output[0]  # output[0] is the stdout
+                                ddisIP = bytes(ip).decode()
+                                ddisIP = ddisIP[:-1]
+                            else:
+                                ddisIP = "None"
+                        except:
+                            ddisIP = "None"
+                        if ddisIP != "" and ddisIP != "None" and ddisIP != "b'None\\n'":
+                            try:
+                                if self.deviceDynamicID_cimiresource is None:
+                                    r2 = requests.post("192.168.7.1/api/device-dynamic",
                                            headers={"slipstream-authn-info": "internal ADMIN"},
                                            json=jsonString_merged_dynamic, verify=False)
-                        print("Posting device-dynamic resource info for micro-agent: ", r2, r2.request, r2.reason,
-                              r2.json())
-                        self.deviceDynamicID_cimiresource = r2.json()['resource-id']
-                        r3 = requests.get("{}/api/device-dynamic".format(self.cimi_endpoint),
+                                    print("Posting device-dynamic resource info for micro-agent: ", r2, r2.request, r2.reason,r2.json())
+                                    self.deviceDynamicID_cimiresource = r2.json()['resource-id']
+                                    r3 = requests.get("192.168.7.1/api/device-dynamic",
                                           headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
-                        print("Response to see posted device-dynamic resource info for micro-agent: ", r3, r3.request,
-                              r3.reason, r3.json())
-                    else:
-                        cimiResourceID = {"resource-id": self.deviceDynamicID_cimiresource}
-                        devDynamic = {**devID, **dynamicinfo, **sensors}
-                        jsonString_merged_dynamic = devDynamic
-                        r4 = requests.put("{}/api/{}".format(self.cimi_endpoint, self.deviceDynamicID_cimiresource),
+                                    print("Response to see posted device-dynamic resource info for micro-agent: ", r3, r3.request,r3.reason, r3.json())
+                                else:
+                                    cimiResourceID = {"resource-id": self.deviceDynamicID_cimiresource}
+                                    devDynamic = {**devID, **dynamicinfo, **sensors}
+                                    jsonString_merged_dynamic = devDynamic
+                                    r4 = requests.put("https://192.168.7.1/api/{}".format(self.deviceDynamicID_cimiresource),
                                           headers={"slipstream-authn-info": "internal ADMIN"},
                                           json=jsonString_merged_dynamic, verify=False)
-                        print("Updating device-dynamic resource info for micro-agent: ", r4, r4.request, r4.reason,
-                              r4.json())
-                        r5 = requests.get("{}/api/device-dynamic".format(self.cimi_endpoint),
+                                    print("Updating device-dynamic resource info for micro-agent: ", r4, r4.request, r4.reason,r4.json())
+                                    r5 = requests.get("192.168.7.1/api/device-dynamic".format(self.cimi_endpoint),
                                           headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
-                        print("Response to see updated device-dynamic resource info for micro-agent: ", r5, r5.request,
+                                    print("Response to see updated device-dynamic resource info for micro-agent: ", r5, r5.request,
                               r5.reason, r5.json())
-                except ConnectionError as e:
-                    print(e)
-                    r = "No response"
-                    print(r)
-                t.sleep(10)
+                            except ConnectionError as e:
+                                print(e)
+                                r = "No response"
+                                print(r)
+                            t.sleep(10)
+
+                        else:
+                            try:
+                                if self.deviceDynamicID_cimiresource is None:
+                                    r2 = requests.post("{}/api/device-dynamic".format(self.cimi_endpoint),
+                                           headers={"slipstream-authn-info": "internal ADMIN"},
+                                           json=jsonString_merged_dynamic, verify=False)
+                                    print("Posting device-dynamic resource info for micro-agent: ", r2, r2.request, r2.reason,r2.json())
+                                    self.deviceDynamicID_cimiresource = r2.json()['resource-id']
+                                    r3 = requests.get("{}/api/device-dynamic".format(self.cimi_endpoint),
+                                          headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
+                                    print("Response to see posted device-dynamic resource info for micro-agent: ", r3, r3.request,r3.reason, r3.json())
+                                else:
+                                    cimiResourceID = {"resource-id": self.deviceDynamicID_cimiresource}
+                                    devDynamic = {**devID, **dynamicinfo, **sensors}
+                                    jsonString_merged_dynamic = devDynamic
+                                    r4 = requests.put("{}/api/{}".format(self.cimi_endpoint, self.deviceDynamicID_cimiresource),
+                                          headers={"slipstream-authn-info": "internal ADMIN"},
+                                          json=jsonString_merged_dynamic, verify=False)
+                                    print("Updating device-dynamic resource info for micro-agent: ", r4, r4.request, r4.reason,r4.json())
+                                    r5 = requests.get("{}/api/device-dynamic".format(self.cimi_endpoint),
+                                          headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
+                                    print("Response to see updated device-dynamic resource info for micro-agent: ", r5, r5.request,
+                              r5.reason, r5.json())
+                            except ConnectionError as e:
+                                print(e)
+                                r = "No response"
+                                print(r)
+                            t.sleep(10)
+                except ConnectionError as er:
+                    print("No response, the reason is: {}".format(er))
+
                 if switch_flag:
                     break
 
