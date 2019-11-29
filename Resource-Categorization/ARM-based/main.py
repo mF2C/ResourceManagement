@@ -245,12 +245,12 @@ class Main():
                         if ddisIP != "" and ddisIP != "None" and ddisIP != "b'None\\n'":
                             try:
                                 if self.deviceDynamicID_cimiresource is None:
-                                    r2 = requests.post("192.168.7.1/api/device-dynamic",
+                                    r2 = requests.post("https://192.168.7.1/api/device-dynamic",
                                            headers={"slipstream-authn-info": "internal ADMIN"},
                                            json=jsonString_merged_dynamic, verify=False)
                                     print("Posting device-dynamic resource info for micro-agent: ", r2, r2.request, r2.reason,r2.json())
                                     self.deviceDynamicID_cimiresource = r2.json()['resource-id']
-                                    r3 = requests.get("192.168.7.1/api/device-dynamic",
+                                    r3 = requests.get("https://192.168.7.1/api/device-dynamic",
                                           headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
                                     print("Response to see posted device-dynamic resource info for micro-agent: ", r3, r3.request,r3.reason, r3.json())
                                 else:
@@ -261,7 +261,7 @@ class Main():
                                           headers={"slipstream-authn-info": "internal ADMIN"},
                                           json=jsonString_merged_dynamic, verify=False)
                                     print("Updating device-dynamic resource info for micro-agent: ", r4, r4.request, r4.reason,r4.json())
-                                    r5 = requests.get("192.168.7.1/api/device-dynamic".format(self.cimi_endpoint),
+                                    r5 = requests.get("https://192.168.7.1/api/device-dynamic".format(self.cimi_endpoint),
                                           headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
                                     print("Response to see updated device-dynamic resource info for micro-agent: ", r5, r5.request,
                               r5.reason, r5.json())
