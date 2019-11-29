@@ -83,7 +83,7 @@ class JoinConfig(object):
             excep = e
             
             if os.path.exists('/etc/wpa_supplicant/wpa_supplicant.conf'):
-                has_joined=JoinConfig.check(interface)
+                has_joined=JoinConfig.check(wifi_interface)
                 if has_joined:
                     #run dhclient to force IP assignment (will happen if this is a normal agent)
                     
