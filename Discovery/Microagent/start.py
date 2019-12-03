@@ -69,13 +69,17 @@ def main():
                 bssid = found_leaders[0]['Bssid']
                 result = join_leader(bssid,interface)
                 print ("[Discovery] "+result["message"])
-                if "Successfully" in result["message"]:
+                if ("Successfully" in result["message"]) or ("Already associated" in result["message"]):
                     print("[Discovery] Getting IP address...")
                     ip = retrieve_ip(interface)
                     if ip!= None:
                         print("[Discovery] IP address of "+interface+" = "+ip)
                     else:
                         print("[Discovery] Unable to retrieve IP of "+interface)
+                        connect_to_vpn() 
+                else:
+                    print("[Discovery] Unable to join the leader...")
+                    connect_to_vpn()
 
 if __name__ == '__main__':
     try:
