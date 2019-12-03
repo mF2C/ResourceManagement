@@ -124,7 +124,7 @@ class Main():
             r = "No response"
             print(r)
         while (not switch_flag):
-            t.sleep(0.1)
+            t.sleep(0.5)
 
     ## Child Dynamic information storing to the CIMI+Dataclay ##
 
@@ -165,7 +165,6 @@ class Main():
         statusinfo = {"status": str(self.status)}
 
         while self._running:
-            t.sleep(0.1)
             dyna = dynamic_info()
             dynamicinfo = json.loads(dyna)
             timeout1 = t.time() + 60 * 2
@@ -185,6 +184,8 @@ class Main():
                     print("agent IP not retrieve yet!!!")
                 if devagentIP != '' or t.time() > timeout1:
                     break
+                else:
+                    t.sleep(.5)
             wifi_ip1 = devagentIP
             patip = re.compile("^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$")
             test1 = patip.match(wifi_ip1)
@@ -232,6 +233,8 @@ class Main():
                     print(e)
                     r = "No response"
                     print(r)
+                finally:
+                    t.sleep(30)
                 if switch_flag:
                     break
 
@@ -305,7 +308,6 @@ class Main():
         statusinfo = {"status": str(self.status)}
 
         while self._running:
-            t.sleep(0.1)
             dyna = dynamic_info()
             dynamicinfo = json.loads(dyna)
             timeout1 = t.time() + 60 * 2
@@ -323,8 +325,11 @@ class Main():
                     devagentIP = str(devIp)
                 except:
                     print("agent IP not retrieve yet!!!")
+
                 if devagentIP != '' or t.time() > timeout1:
                     break
+                else:
+                    t.sleep(.5)
             wifi_ip1 = devagentIP
             patip = re.compile("^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$")
             test1 = patip.match(wifi_ip1)
@@ -372,6 +377,9 @@ class Main():
                     print(e)
                     r = "No response"
                     print(r)
+                finally:
+                    t.sleep(30)
+            t.sleep(.5)
 
     ## Leader-side agent-resource Information sending to the CIMI+Dataclay for storing ##
 
@@ -387,8 +395,6 @@ class Main():
         dID = str(deviceID)
         MyleaderID = (str(self.deviceID_cimiresource))
         while self._running:
-            t.sleep(0.1)
-
             result = subprocess.run(['/bin/ip', 'route'], stdout=subprocess.PIPE)
             route_ip = bytes(result.stdout).decode()
             route_ip_l = route_ip.split('\n')
@@ -438,6 +444,8 @@ class Main():
                             print('VPN generic error.')
                         if devip != '' or t.time() > timeout:
                             break
+                        else:
+                            t.sleep(2.0)
                 r22 = requests.get("http://cimi:8201/api/device-dynamic",
                                    headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
                 dynamics_info = r22.json()
@@ -461,6 +469,8 @@ class Main():
                         print("agent IP not retrieve yet!!!")
                     if devagentIP != '' or t.time() > timeout2:
                         break
+                    else:
+                        t.sleep(.5)
                 wifi_ip = devagentIP
 
 
@@ -516,12 +526,13 @@ class Main():
                         r9 = requests.get(end_url_point, headers={"slipstream-authn-info": "internal ADMIN"},
                                           verify=False)
                         print("Response to see updated agent resource info: ", r9, r9.request, r9.reason, r9.json())
-
-
+                        t.sleep(5.)
                 except ConnectionError as e:
                     print("Agent resource is not yet created!!! Wait for few times")
+                    t.sleep(2.)
             else:
                 print("IP is not retrieved yet!!!")
+                t.sleep(.5)
 
     ##Fog Area resource information storing into the CIMI+Dataclay##
     def fogarea(self):
@@ -590,6 +601,7 @@ class Main():
 
                     else:
                         pass
+                    t.sleep(.1)
 
                 r99 = requests.get("http://cimi:8201/api/device-dynamic",
                                    headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
@@ -762,13 +774,14 @@ class Main():
                                                headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
                             print("Response to GET the updated Fog-Area resource info: ", r81, r81.request, r81.reason,
                                   r81.json())
-
                     except ConnectionError as e:
                         print("Wait for sometimes to prepare the Fog Area resource Information")
                 else:
                     print("There is no free available resources are left!!!")
             except:
                 print("The Fog-Area resources have some problem!!! Please wait for sometimes!!!")
+            finally:
+                t.sleep(5)
 
 
 # Calling the Main Class
