@@ -196,6 +196,18 @@ class Main():
                     }
                 ]
             }
+
+        elif target_deviceSensor == 'V':
+            sensors = {
+                "sensors": [
+                    {
+                        "sensorType": "[\"webcam\", \"video\", \"hdcam\"]",
+                        "sensorConnection": "{\"bluetoothMac\": \"12:23:34:45:56:67\"}",
+                        "sensorModel": "video"
+                    }
+                ]
+            }
+
         else:
             sensortype = None
             sensormodel = None
