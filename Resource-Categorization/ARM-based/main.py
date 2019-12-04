@@ -164,7 +164,7 @@ class Main():
             print("No response, the reason is: {}".format(er))
 
         while (not switch_flag):
-            t.sleep(0.1)
+            t.sleep(0.5)
 
 
 ## Child Dynamic information storing to the CIMI+Dataclay ##
@@ -196,6 +196,18 @@ class Main():
                     }
                 ]
             }
+
+        elif target_deviceSensor == 'V':
+            sensors = {
+                "sensors": [
+                    {
+                        "sensorType": "[\"webcam\", \"video\", \"hdcam\"]",
+                        "sensorConnection": "{\"bluetoothMac\": \"12:23:34:45:56:67\"}",
+                        "sensorModel": "video"
+                    }
+                ]
+            }
+
         else:
             sensortype = None
             sensormodel = None
@@ -269,7 +281,7 @@ class Main():
                                 print(e)
                                 r = "No response"
                                 print(r)
-                            t.sleep(10)
+                            t.sleep(30)
 
                         else:
                             try:
@@ -298,9 +310,12 @@ class Main():
                                 print(e)
                                 r = "No response"
                                 print(r)
-                            t.sleep(10)
+                            t.sleep(30)
                 except ConnectionError as er:
                     print("No response, the reason is: {}".format(er))
+
+                finally:
+                    t.sleep(30)
 
                 if switch_flag:
                     break
