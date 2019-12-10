@@ -9,6 +9,7 @@ import threading
 import requests
 import socket
 from time import sleep
+import select
 
 from common.logs import LOG
 from common.common import CPARAMS, URLS
@@ -29,8 +30,10 @@ class AgentStart:
     ETAG = '\033[31m' + '[FCJP] ERROR: ' + '\033[0m'
     MAX_MISSING_SCANS = 10      # TODO: ENV Policies Param
     MAX_VPN_FAILURES = 20
+    MAX_CAUCLIENT_FAILURES = 5
     WAIT_TIME_CIMI = 2.
     WAIT_TIME_VPN = 5.
+    WAIT_TIME_CAUCLIENT = 5.
     ALE_ENABLED = False
 
     def __init__(self, addr_dis=None, addr_id=None, addr_cat=None, addr_pol=None, addr_CAUcl=None, addr_dcly=None):
@@ -230,13 +233,20 @@ class AgentStart:
             if self._connected:
                 self.cauclient_failed = True
                 LOG.debug(self.TAG + 'Sending trigger to CAU client...')
-                try:
-                    r = self.__trigger_triggerCAUclient()
-                    self.cauclient_failed = not r
-                except Exception:
-                    LOG.exception(self.TAG + 'CAUclient failed.')
-                    self.cauclient_failed = True
-                LOG.info(self.TAG + 'CAU client Trigger Done.')
+                attempt = 0
+                r = False
+                while self._connected and not r and attempt < self.MAX_CAUCLIENT_FAILURES:
+                    try:
+                        r = self.__trigger_triggerCAUclient()
+                        self.cauclient_failed = not r
+                    except Exception:
+                        LOG.exception(self.TAG + 'CAUclient failed.')
+                        self.cauclient_failed = True
+                    finally:
+                        attempt += 1
+                    if not r:
+                        sleep(self.WAIT_TIME_CAUCLIENT)
+                LOG.info(self.TAG + 'CAU client Trigger Done in {} attempts and ok={}.'.format(attempt, r))
             else:
                 return
             if not CPARAMS.DEBUG_FLAG and self.cauclient_failed:
@@ -397,13 +407,20 @@ class AgentStart:
         if self._connected:
             self.cauclient_failed = True
             LOG.debug(self.TAG + 'Sending trigger to CAU client...')
-            try:
-                r = self.__trigger_triggerCAUclient()
-                self.cauclient_failed = not r
-            except Exception:
-                LOG.exception(self.TAG + 'CAUclient failed.')
-                self.cauclient_failed = True
-            LOG.info(self.TAG + 'CAU client Trigger Done.')
+            attempt = 0
+            r = False
+            while self._connected and not r and attempt < self.MAX_CAUCLIENT_FAILURES:
+                try:
+                    r = self.__trigger_triggerCAUclient()
+                    self.cauclient_failed = not r
+                except Exception:
+                    LOG.exception(self.TAG + 'CAUclient failed.')
+                    self.cauclient_failed = True
+                finally:
+                    attempt += 1
+                if not r:
+                    sleep(self.WAIT_TIME_CAUCLIENT)
+            LOG.info(self.TAG + 'CAU client Trigger Done in {} attempts and ok={}.'.format(attempt, r))
         else:
             return
         if not CPARAMS.DEBUG_FLAG and self.cauclient_failed:
@@ -526,13 +543,20 @@ class AgentStart:
         if self._connected:
             self.cauclient_failed = True
             LOG.debug(self.TAG + 'Sending trigger to CAU client...')
-            try:
-                r = self.__trigger_triggerCAUclient()
-                self.cauclient_failed = not r
-            except Exception:
-                LOG.exception(self.TAG + 'CAUclient failed.')
-                self.cauclient_failed = True
-            LOG.info(self.TAG + 'CAU client Trigger Done.')
+            attempt = 0
+            r = False
+            while self._connected and not r and attempt < self.MAX_CAUCLIENT_FAILURES:
+                try:
+                    r = self.__trigger_triggerCAUclient()
+                    self.cauclient_failed = not r
+                except Exception:
+                    LOG.exception(self.TAG + 'CAUclient failed.')
+                    self.cauclient_failed = True
+                finally:
+                    attempt += 1
+                if not r:
+                    sleep(self.WAIT_TIME_CAUCLIENT)
+            LOG.info(self.TAG + 'CAU client Trigger Done in {} attempts and ok={}.'.format(attempt, r))
         else:
             return
         if not CPARAMS.DEBUG_FLAG and self.cauclient_failed:
@@ -702,9 +726,9 @@ class AgentStart:
         #     'deviceID': self.deviceID,
         #     'IDkey': self.IDkey
         # }
-        # TODO: Define socket timeout
         s_caucl = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s_caucl.connect(CPARAMS.CAU_CLIENT_ADDR)
+        s_caucl.settimeout(15.)
         s_caucl.send('detectedLeaderID={},deviceID={}\n'.format(self.detectedLeaderID, self.deviceID).encode())
         reply = s_caucl.recv(4092).decode()
         LOG.debug(self.TAG + 'CAU_client reply: {}'.format(reply))
