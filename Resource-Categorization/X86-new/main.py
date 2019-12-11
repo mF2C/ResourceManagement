@@ -450,7 +450,9 @@ class Main():
                                    headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
                 dynamics_info = r22.json()
                 rs_info = dynamics_info['deviceDynamics']
-                ips1 = [item['wifiAddress'] for item in rs_info]
+
+                actv_rs_info = [i for i in rs_info if (i['status'] == "connected")]
+                ips1 = [item['wifiAddress'] for item in actv_rs_info]
 
                 timeout2 = t.time() + 60 * 2
                 while True:
