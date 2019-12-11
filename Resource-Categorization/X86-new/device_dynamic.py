@@ -20,7 +20,7 @@ def dynamic_info():
         available_ram_size = float(psutil.virtual_memory()[1])
         RAM_size1 = ((available_ram_size / 1024) / 1024)
         RAM_size = float(RAM_size1)
-        available_ram_size_in_percentage1 = 100 - psutil.virtual_memory()[2]
+        available_ram_size_in_percentage1 = 100.0 - psutil.virtual_memory()[2]
         available_ram_size_in_percentage = float(available_ram_size_in_percentage1)
 
         OS = platform.system()
@@ -36,11 +36,11 @@ def dynamic_info():
         available_storage_size_in_bytes = float(du[2])
         Storage_size1 = ((available_storage_size_in_bytes / 1024) / 1024)
         Storage_size = float(Storage_size1)
-        available_storage_size_in_percentage1 = 100 - du[3]
+        available_storage_size_in_percentage1 = 100.0 - du[3]
         available_storage_size_in_percentage = float(available_storage_size_in_percentage1)
 
         cpu_status = psutil.cpu_percent()
-        available_cpu_in_percentage1 = 100 - cpu_status
+        available_cpu_in_percentage1 = 100.0 - cpu_status
         available_cpu_in_percentage = float(available_cpu_in_percentage1)
 
         os = platform.system()
