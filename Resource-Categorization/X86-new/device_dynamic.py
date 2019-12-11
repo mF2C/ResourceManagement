@@ -18,7 +18,7 @@ def dynamic_info():
         global power_plugged, power_remaining_status, power_remaining_time_info
 
         available_ram_size = float(psutil.virtual_memory()[1])
-        RAM_size1 = ((available_ram_size / 1024) / 1024)
+        RAM_size1 = ((available_ram_size / 1024.0) / 1024.0)
         RAM_size = float(RAM_size1)
         available_ram_size_in_percentage1 = 100.0 - psutil.virtual_memory()[2]
         available_ram_size_in_percentage = float(available_ram_size_in_percentage1)
@@ -34,7 +34,7 @@ def dynamic_info():
             du = tuple(psutil.disk_usage('Internal storage'))
 
         available_storage_size_in_bytes = float(du[2])
-        Storage_size1 = ((available_storage_size_in_bytes / 1024) / 1024)
+        Storage_size1 = ((available_storage_size_in_bytes / 1024.0) / 1024.0)
         Storage_size = float(Storage_size1)
         available_storage_size_in_percentage1 = 100.0 - du[3]
         available_storage_size_in_percentage = float(available_storage_size_in_percentage1)

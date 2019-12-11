@@ -28,7 +28,7 @@ def static_info():
         logical_cpu = psutil.cpu_count()
         mem = psutil.virtual_memory()
         RAM = mem[0]
-        total_ram_size1 = ((RAM / 1024) / 1024)
+        total_ram_size1 = ((RAM / 1024.0) / 1024.0)
         total_ram_size = float(total_ram_size1)
 
         OS = platform.system()
@@ -42,7 +42,7 @@ def static_info():
             b = tuple(psutil.disk_usage('Internal storage'))
 
         storage = float(b[0])
-        total_available_storage1 = ((storage / 1024) / 1024)
+        total_available_storage1 = ((storage / 1024.0) / 1024.0)
         total_available_storage = float(total_available_storage1)
 
         agent_type = getenv('agentType')
