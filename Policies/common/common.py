@@ -50,6 +50,14 @@ class common_params:
             self.STARTUP_TIME_HEALTH = float(environ.get('HEALTH_STARTUP', default=60.))
         except ValueError:
             self.STARTUP_TIME_HEALTH = 60.
+        try:
+            self.MAX_RETRY_ATTEMPTS = int(environ.get('MAX_RETRY_ATTEMPTS', default=20))
+        except ValueError:
+            self.MAX_RETRY_ATTEMPTS = 10
+        try:
+            self.MAX_TTL = int(environ.get('MAX_TTL', default=10))
+        except ValueError:
+            self.MAX_TTL = 10
 
         self.__dicc = {
             'isLeader'                  : self.LEADER_FLAG,

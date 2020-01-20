@@ -79,6 +79,18 @@ To run policies module along other mF2C components, is necessary to specify the 
 - "REGISTRATION_MAX_RETRY=20"
 ```
 
+#### To specify the amount of retry attempts to check the leader before takeover
+
+```yaml
+- "MAX_RETRY_ATTEMPTS=20"
+```
+
+#### To specify the amount of time (seconds) before a backup is considered down
+
+```yaml
+- "MAX_TTL=10"
+```
+
 ### API
 
 All the API calls are made via REST. The endpoints and required parameters can be consulted on [http://{policies_address}:46050/](http://localhost:46050/)
