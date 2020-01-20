@@ -85,6 +85,26 @@ To run policies module along other mF2C components, is necessary to specify the 
 - "MF2C_CLOUD_AGENT=172.0.0.1"
 ``` 
 
+##### To specify the amount of retry attempts to register a device
+
+```yaml
+- "REGISTRATION_MAX_RETRY=20"
+```
+
+#### To specify the amount of retry attempts to check the leader before takeover
+
+```yaml
+- "MAX_RETRY_ATTEMPTS=20"
+```
+
+*Retry period: 2 seconds*
+
+#### To specify the amount of time (seconds) before a backup is considered down
+
+```yaml
+- "MAX_TTL=10"
+```
+
 Once the leader is setup and running, the Area Resilience submodule starts looking for an agent to become the backup. The backup checks if the leader is running correctly using the Keepalive Protocol defined in the module. Either the Leader or the Backup are protected, meaning that if the Leader fails, the backup takes its place or if the backup fails, the leader elects a new one when it's possible. The election is performed using the Leader Election Algorithm.
 
 ##### Leader Reelection (LR)

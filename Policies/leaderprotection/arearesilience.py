@@ -24,7 +24,8 @@ __author__ = 'Universitat Politècnica de Catalunya'
 
 
 class BackupEntry:
-    MAX_TTL = 3 / .1 # 30 ticks ~ 3 secs
+    # MAX_TTL = 3 / .1 # 30 ticks ~ 3 secs
+    MAX_TTL = CPARAMS.MAX_TTL / .1 # MAX_TTL * 10 ticks ~ MAX_TTL secs
 
     def __init__(self, deviceID, deviceIP, priority):
         self.deviceID = deviceID
@@ -38,11 +39,13 @@ class AreaResilience:
     # LEADER_PORT = 46052  # 29513
     POLICIES_EXTERNAL_PORT = CPARAMS.POLICIES_EXTERNAL_PORT if CPARAMS.MF2C_FLAG else CPARAMS.POLICIES_INTERNAL_PORT
 
-    MAX_RETRY_ATTEMPTS = 5
+    # MAX_RETRY_ATTEMPTS = 5
+    MAX_RETRY_ATTEMPTS = CPARAMS.MAX_RETRY_ATTEMPTS     # 10
 
     TIME_TO_WAIT_BACKUP_SELECTION = 3
     TIME_KEEPALIVE = 1
     TIME_KEEPER = .1
+    TIME_RETRY_CONNECTION = 2.
     MINIMUM_BACKUPS = 1
 
     PRIORITY_ON_DEMOTION = -2
@@ -439,6 +442,7 @@ class AreaResilience:
                     stopLoop = True
             LOG.warning('Keepalive connection is broken... Retry Attempts: {}'.format(self.MAX_RETRY_ATTEMPTS-(attempt+1)))
             attempt += 1
+            sleep(self.TIME_RETRY_CONNECTION)
 
         if not self._connected:
             LOG.info('Backup stopped.')
