@@ -299,6 +299,17 @@ curl -X GET "http://localhost/api/v2/resource-management/policies/roleChange/lea
 
 ## CHANGELOG
 
+### 2.0.13b (27/01/2019)
+
+#### Added
+
+    + MAX_RETRY_ATTEMPTS and MAX_TTL env variables added
+    
+#### Changed
+
+    * MAX_RETRY_ATTEMPTS and MAX_TTL default values increased (20 attempts and 10 MAX_TTL)
+    * Time between attempts increased (2 seconds)
+
 ### 2.0.13 (10/12/2019)
 
 #### Added
