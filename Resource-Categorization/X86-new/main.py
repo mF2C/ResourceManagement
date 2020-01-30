@@ -385,7 +385,7 @@ class Main():
 
     def agentresourceLeader(self):
         global agresid, end_url_point, wifi_address_NIC, ethe_address_NIC
-        childip = []
+        #childip = []
         childrenIP = []
         inchildip = []
         devip = ''
@@ -450,7 +450,12 @@ class Main():
                                    headers={"slipstream-authn-info": "internal ADMIN"}, verify=False)
                 dynamics_info = r22.json()
                 rs_info = dynamics_info['deviceDynamics']
-                ips1 = [item['wifiAddress'] for item in rs_info]
+
+                actv_rs_info = [i for i in rs_info if (i['status'] == "connected")]
+                ips1 = [item['wifiAddress'] for item in actv_rs_info]
+                print("--------------------------------------------------------------------------------")
+                print("$$$$$$$$IPS1$$$$$$$$$$$$$$$ : ", ips1)
+                print("---------------------------------------------------------------------------------")
 
                 timeout2 = t.time() + 60 * 2
                 while True:
@@ -476,17 +481,22 @@ class Main():
 
                 inchildip = [y for y in ips1 if y is not None and y != "192.168.7.1" and y!= wifi_ip]
 
-                pat = re.compile("^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$")
+                print("--------------------------------------------------------------------------------")
+                print("$$$$$$$$InCHILDIPs$$$$$$$$$$$$$$$ : ", inchildip)
+                print("---------------------------------------------------------------------------------")
 
-                for l in inchildip:
-                    test = pat.match(l)
-                    if test:
-
-                        childrenIP.append(l)
-
-                childip = list(dict.fromkeys(childrenIP))
-
-                print("List of Children IPs: ", childip)
+                # pat = re.compile("^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$")
+                #
+                # for l in inchildip:
+                #     test = pat.match(l)
+                #     if test:
+                #
+                #         childrenIP.append(l)
+                #
+                # childip = list(dict.fromkeys(childrenIP))
+                # print("--------------------------------------------------------------------------------")
+                # print("List of Children IPs: ", childip)
+                # print("--------------------------------------------------------------------------------")
 
                 backupip = ""
                 authenticated = True
@@ -495,8 +505,8 @@ class Main():
 
                 agentResource1_info = {"device_id": dID, "device_ip": devip, "leader_id": dID, "leader_ip": devip,
                                        "authenticated": authenticated, "connected": connect, "isLeader": isleader,
-                                       "backup_ip": backupip, "childrenIPs": childip}
-                agentResource_info = {"device_id": dID, "leader_id": MyleaderID,"childrenIPs": childip}
+                                       "backup_ip": backupip, "childrenIPs": inchildip}
+                agentResource_info = {"device_id": dID, "leader_id": MyleaderID,"childrenIPs": inchildip}
 
                 agentRes_info = json.dumps(agentResource_info)
                 agentRes1_info = json.dumps(agentResource1_info)

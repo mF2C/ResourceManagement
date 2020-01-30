@@ -18,8 +18,10 @@ def dynamic_info():
         global power_plugged, power_remaining_status, power_remaining_time_info
 
         available_ram_size = float(psutil.virtual_memory()[1])
-        RAM_size = ((available_ram_size / 1024) / 1024)
-        available_ram_size_in_percentage = 100 - psutil.virtual_memory()[2]
+        RAM_size1 = float((available_ram_size / 1024.0) / 1024.0)
+        RAM_size = float(RAM_size1)
+        available_ram_size_in_percentage1 = float(100.0 - psutil.virtual_memory()[2])
+        available_ram_size_in_percentage = float(available_ram_size_in_percentage1)
 
         OS = platform.system()
         if OS == 'Linux':
@@ -32,11 +34,14 @@ def dynamic_info():
             du = tuple(psutil.disk_usage('Internal storage'))
 
         available_storage_size_in_bytes = float(du[2])
-        Storage_size = ((available_storage_size_in_bytes / 1024) / 1024)
-        available_storage_size_in_percentage = 100 - du[3]
+        Storage_size1 = float((available_storage_size_in_bytes / 1024.0) / 1024.0)
+        Storage_size = float(Storage_size1)
+        available_storage_size_in_percentage1 = float(100.0 - du[3])
+        available_storage_size_in_percentage = float(available_storage_size_in_percentage1)
 
         cpu_status = psutil.cpu_percent()
-        available_cpu_in_percentage = 100 - cpu_status
+        available_cpu_in_percentage1 = float(100.0 - cpu_status)
+        available_cpu_in_percentage = float(available_cpu_in_percentage1)
 
         os = platform.system()
         if os == 'Linux':
@@ -212,3 +217,4 @@ def dynamic_info():
     z = {**C, **D}
     jsonString_merged_dynamic = json.dumps(z)
     return jsonString_merged_dynamic
+
